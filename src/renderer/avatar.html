@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self'; object-src 'none'; base-uri 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Habit Buddy</title>
+  <link rel="stylesheet" href="avatar.css">
+  <script defer src="avatar.js"></script>
+</head>
+<body>
+  <button id="buddy" aria-label="Open or close Habit Buddy. Drag to move." title="Click for your day · drag to move">
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <ellipse cx="50" cy="91" rx="29" ry="4" fill="#263f31" opacity=".12"/>
+      <path d="M17 63C12 42 26 20 49 20C72 20 87 39 83 62C81 79 68 87 50 87C30 87 20 79 17 63Z" fill="#c3d5b6" stroke="#70896a" stroke-width="2"/>
+      <path d="M47 21C43 9 52 6 61 9C61 17 55 22 47 21Z" fill="#78986b"/>
+      <ellipse cx="32" cy="61" rx="7" ry="4" fill="#e5b8a9"/>
+      <ellipse cx="68" cy="61" rx="7" ry="4" fill="#e5b8a9"/>
+      <g stroke="#3d5140" stroke-width="4" stroke-linecap="round">
+        <path class="eye eye-left" d="M36 49V54"/>
+        <path class="eye eye-right" d="M64 49V54"/>
+      </g>
+      <path d="M44 62Q50 68 56 62" fill="none" stroke="#3d5140" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+  </button>
+  <div class="resize-edge top" data-edge="top" role="slider" tabindex="0" aria-label="Buddy size. Drag up or down, or use arrow keys. Double-click to reset." aria-valuemin="64" aria-valuemax="160" aria-valuenow="68" title="Drag up or down to resize · double-click for default size"></div>
+  <div class="resize-edge bottom" data-edge="bottom" role="slider" tabindex="0" aria-label="Buddy size. Drag up or down, or use arrow keys. Double-click to reset." aria-valuemin="64" aria-valuemax="160" aria-valuenow="68" title="Drag up or down to resize · double-click for default size"></div>
+</body>
+</html>

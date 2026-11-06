@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self'; object-src 'none'; base-uri 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your day · Habit Buddy</title>
+  <link rel="stylesheet" href="popup.css">
+  <script defer src="popup.js"></script>
+</head>
+<body>
+  <header><span class="wordmark">HABIT BUDDY</span><button id="close" aria-label="Close popup">×</button></header>
+  <main>
+    <p id="date" class="date"></p>
+    <h1>A little space for you.</h1>
+    <div class="empty-mark" aria-hidden="true">✦</div>
+    <h2>One small thing at a time.</h2>
+    <p>Your habits will feel at home here.</p>
+    <p class="build-note">Adding habits comes in the next step.</p>
+  </main>
+  <footer><span class="dot"></span><span id="status" role="status">Getting cozy…</span></footer>
+</body>
+</html>

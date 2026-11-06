@@ -1,0 +1,16 @@
+{
+  "name": "habit-buddy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A small, gentle, offline desktop habit companion",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "smoke": "electron . --smoke-test",
+    "test": "node --test",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/store.js && node --check src/renderer/avatar.js && node --check src/renderer/popup.js"
+  },
+  "devDependencies": {
+    "electron": "45.2.3"
+  }
+}

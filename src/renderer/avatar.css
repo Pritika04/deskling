@@ -1,0 +1,23 @@
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+button { display: block; width: 100%; height: 100%; padding: 5px; border: 0; background: transparent; cursor: grab; touch-action: none; user-select: none; }
+button:active { cursor: grabbing; }
+button:focus-visible { outline: 2px dashed #70896a; outline-offset: -9px; border-radius: 24px; }
+svg { width: 100%; height: 100%; pointer-events: none; }
+.resize-edge { position: absolute; left: 25%; width: 50%; height: 10px; cursor: ns-resize; touch-action: none; user-select: none; }
+.resize-edge.top { top: 0; }
+.resize-edge.bottom { bottom: 0; }
+.resize-edge::after { content: ''; position: absolute; top: 4px; left: calc(50% - 8px); width: 16px; height: 2px; border-radius: 2px; background: #70896a; opacity: 0; }
+body:hover .resize-edge::after, .resize-edge:focus-visible::after, body.resizing .resize-edge::after { opacity: .65; }
+.resize-edge:focus-visible { outline: 1px dashed #70896a; border-radius: 5px; }
+.eye { transform-box: fill-box; transform-origin: center; }
+.blink .eye { animation: blink 180ms ease-in-out; }
+.wink .eye-right { animation: blink 320ms ease-in-out; }
+@keyframes blink {
+  0%, 100% { transform: scaleY(1); }
+  45%, 60% { transform: scaleY(.08); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .blink .eye, .wink .eye-right { animation: none; }
+}
