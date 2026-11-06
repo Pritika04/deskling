@@ -25,7 +25,7 @@ function initialState() {
     reminderDeliveries: {},
     reminderQueue: [],
     mystery: { days: {}, usedIds: [], lastType: null },
-    thoughts: { usedIds: [], lastType: null, nextAt: 0 },
+    thoughts: { usedIds: [], lastType: null, nextAt: 0, day: null },
   };
 }
 
@@ -51,6 +51,7 @@ function validateState(state) {
       (state.settings.accent !== null && !/^#[0-9a-f]{6}$/i.test(state.settings.accent))) throw new Error('Invalid appearance settings.');
   state.habits.forEach(validateHabit);
   if (!state.thoughts || !Array.isArray(state.thoughts.usedIds) || state.thoughts.usedIds.some(id => typeof id !== 'string') || (state.thoughts.lastType !== null && typeof state.thoughts.lastType !== 'string') || !Number.isFinite(state.thoughts.nextAt) || state.thoughts.nextAt < 0) throw new Error('Invalid buddy thought history.');
+  if (state.thoughts.day !== null && !/^\d{4}-\d{2}-\d{2}$/.test(state.thoughts.day)) throw new Error('Invalid buddy thought day.');
   if (!state.reminderDeliveries || typeof state.reminderDeliveries !== 'object' || Array.isArray(state.reminderDeliveries) || Object.values(state.reminderDeliveries).some(value => typeof value !== 'string')) throw new Error('Invalid reminder history.');
   if (!Array.isArray(state.reminderQueue) || state.reminderQueue.some(item => !item || typeof item.habitId !== 'string' || typeof item.slot !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(item.day))) throw new Error('Invalid reminder queue.');
   if (!state.mystery || !state.mystery.days || typeof state.mystery.days !== 'object' || Array.isArray(state.mystery.days) || !Array.isArray(state.mystery.usedIds) || state.mystery.usedIds.some(id => typeof id !== 'string') || (state.mystery.lastType !== null && typeof state.mystery.lastType !== 'string')) throw new Error('Invalid mystery box history.');
@@ -83,7 +84,8 @@ class Store {
         if (!Object.hasOwn(this.state, 'reminderDeliveries')) this.state.reminderDeliveries = {};
         if (!Object.hasOwn(this.state, 'reminderQueue')) this.state.reminderQueue = [];
         if (!Object.hasOwn(this.state, 'mystery')) this.state.mystery = { days: {}, usedIds: [], lastType: null };
-        if (!Object.hasOwn(this.state, 'thoughts')) this.state.thoughts = { usedIds: [], lastType: null, nextAt: 0 };
+        if (!Object.hasOwn(this.state, 'thoughts')) this.state.thoughts = { usedIds: [], lastType: null, nextAt: 0, day: null };
+        if (this.state.thoughts && !Object.hasOwn(this.state.thoughts, 'day')) this.state.thoughts.day = null;
         for (const [key, value] of Object.entries(initialState().settings)) {
           if (!Object.hasOwn(this.state.settings, key)) this.state.settings[key] = value;
         }

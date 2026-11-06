@@ -87,7 +87,7 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 - A new day starts fresh: completing that day's habits can earn a new box.
 - Reward content lives in `content/mystery.json`: quotes, motivation, and encouraging end-of-day notes, bundled offline.
 - Don't repeat the same content type two days in a row, and avoid repeating the same item until the pool is exhausted.
-- Separate `content/random.json` holds daytime jokes, riddles, kindness prompts, and playful thoughts. These appear as buddy speech bubbles every 45–90 minutes between 8 AM and 10 PM, waiting for a quiet moment. Pause reminders also pauses these thoughts. Each pool has independent repeat protection, saved across restarts.
+- Separate `content/random.json` holds daytime jokes, riddles, kindness prompts, and playful thoughts. These appear as buddy speech bubbles with a fresh random wait of 30–150 minutes after each thought, between 8 AM and 10 PM, waiting for a quiet moment. Each day starts with a newly randomized wait; restarting on the same day keeps the scheduled time. Pause reminders also pauses these thoughts. Each pool has independent repeat protection, saved across restarts.
 
 ### 9. Themes
 - A few ready-made palettes plus a custom accent color picker.
