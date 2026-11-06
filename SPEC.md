@@ -67,10 +67,11 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 - Removing a habit keeps its past history in the heat map.
 
 ### 6. Reminders
-- Native OS notifications (cute wording, with emoji).
+- Gentle speech bubbles from the floating buddy, with cute wording and occasional emoji. They do not open the habit menu or steal focus.
 - Per habit, either at fixed times (e.g. 11:00) or repeating (e.g. every 2 hours between set hours).
 - Global "Pause reminders" option.
 - Never notify for a habit that is already complete for the day.
+- Show one bubble at a time. Queue simultaneous reminders locally, preserve pending reminders across restarts, and discard stale or no-longer-relevant reminders.
 
 ### 7. Streak and heat map
 - GitHub-style contribution heat map, themed by the palette.
@@ -80,10 +81,13 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 
 ### 8. Mystery box
 - When all habits are complete, the avatar transforms into a gift/mystery box.
-- Click to reveal content, then show a "see you tomorrow" message and the streak.
-- **Varied content**, bundled with the app and working offline: motivational quotes, gentle jokes, fun facts, "see you tomorrow" notes, and small challenges.
+- Finish the final habit without reopening the habit menu. A golden, gently bouncing present invites a click. Opening it shows a dedicated reward view with no habits or settings competing for attention.
+- Each earned box opens once, with the claim remembered across restarts. The present stays while the reward is open; closing the reward brings the chosen buddy back as a desktop pet.
+- Adding a new habit after opening a box allows another box once all current habits, including the new one, are complete. Editing, correcting, or removing an already rewarded habit does not reopen a claimed box.
+- A new day starts fresh: completing that day's habits can earn a new box.
+- Reward content lives in `content/mystery.json`: quotes, motivation, and encouraging end-of-day notes, bundled offline.
 - Don't repeat the same content type two days in a row, and avoid repeating the same item until the pool is exhausted.
-- Content should live in a simple data file (e.g. `content/mystery.json`) that is easy to extend.
+- Separate `content/random.json` holds daytime jokes, riddles, kindness prompts, and playful thoughts. These appear as buddy speech bubbles every 45–90 minutes between 8 AM and 10 PM, waiting for a quiet moment. Pause reminders also pauses these thoughts. Each pool has independent repeat protection, saved across restarts.
 
 ### 9. Themes
 - A few ready-made palettes plus a custom accent color picker.
@@ -111,7 +115,7 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 3. Add-habit flow and habit list with the four habit types
 4. Avatar SVGs, face rig, and reactions
 5. Heat map, streak, and theming
-6. Reminders (native notifications)
+6. Reminders (buddy speech bubbles)
 7. Mystery box and content pool
 8. Launch at login, install scripts, GitHub Actions release builds
 

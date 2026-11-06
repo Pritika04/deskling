@@ -1,0 +1,158 @@
+[
+  {
+    "id": "quote-1",
+    "type": "quote",
+    "title": "Quote of the day",
+    "text": "The journey of a thousand miles begins with a single step.",
+    "author": "Laozi"
+  },
+  {
+    "id": "quote-2",
+    "type": "quote",
+    "title": "Quote of the day",
+    "text": "It does not matter how slowly you go as long as you do not stop.",
+    "author": "Confucius"
+  },
+  {
+    "id": "quote-3",
+    "type": "quote",
+    "title": "Quote of the day",
+    "text": "No one is useless in this world who lightens the burden of another.",
+    "author": "Charles Dickens"
+  },
+  {
+    "id": "quote-4",
+    "type": "quote",
+    "title": "Quote of the day",
+    "text": "Hope is the thing with feathers that perches in the soul.",
+    "author": "Emily Dickinson"
+  },
+  {
+    "id": "quote-5",
+    "type": "quote",
+    "title": "Quote of the day",
+    "text": "Fall seven times, stand up eight.",
+    "author": "Japanese proverb"
+  },
+  {
+    "id": "quote-6",
+    "type": "quote",
+    "title": "Quote of the day",
+    "text": "The best time to plant a tree was twenty years ago. The second best time is now.",
+    "author": "Proverb"
+  },
+  {
+    "id": "quote-7",
+    "type": "quote",
+    "title": "Quote of the day",
+    "text": "Act as if what you do makes a difference. It does.",
+    "author": "William James"
+  },
+  {
+    "id": "quote-8",
+    "type": "quote",
+    "title": "Quote of the day",
+    "text": "Nothing great was ever achieved without enthusiasm.",
+    "author": "Ralph Waldo Emerson"
+  },
+  {
+    "id": "quote-9",
+    "type": "quote",
+    "title": "Quote of the day",
+    "text": "We suffer more often in imagination than in reality.",
+    "author": "Seneca"
+  },
+  {
+    "id": "quote-10",
+    "type": "quote",
+    "title": "Quote of the day",
+    "text": "Well done is better than well said.",
+    "author": "Benjamin Franklin"
+  },
+  {
+    "id": "quote-11",
+    "type": "quote",
+    "title": "Quote of the day",
+    "text": "No act of kindness, no matter how small, is ever wasted.",
+    "author": "Aesop"
+  },
+  {
+    "id": "quote-12",
+    "type": "quote",
+    "title": "Quote of the day",
+    "text": "If one advances confidently in the direction of his dreams, he will meet with a success unexpected in common hours.",
+    "author": "Henry David Thoreau"
+  },
+  {
+    "id": "inspire-1",
+    "type": "inspiration",
+    "title": "You showed up",
+    "text": "Today you did what you said you would. That is how every big change quietly begins."
+  },
+  {
+    "id": "inspire-2",
+    "type": "inspiration",
+    "title": "Proof",
+    "text": "Every checked box is evidence that you keep your word to yourself. Collect more evidence tomorrow."
+  },
+  {
+    "id": "inspire-3",
+    "type": "inspiration",
+    "title": "Momentum",
+    "text": "The hardest part is starting. You started. Everything after that is just continuing."
+  },
+  {
+    "id": "inspire-4",
+    "type": "inspiration",
+    "title": "Zoom out",
+    "text": "One day rarely changes a life. A hundred days like this one absolutely does."
+  },
+  {
+    "id": "inspire-5",
+    "type": "inspiration",
+    "title": "The long game",
+    "text": "You are not behind. You are building something that takes exactly as long as it takes."
+  },
+  {
+    "id": "inspire-6",
+    "type": "inspiration",
+    "title": "Roots first",
+    "text": "Trees spend years growing roots before anyone sees a branch. Unseen work counts."
+  },
+  {
+    "id": "inspire-7",
+    "type": "inspiration",
+    "title": "Brave enough",
+    "text": "Doing the thing when you didn't feel like it is the real kind of strength."
+  },
+  {
+    "id": "inspire-8",
+    "type": "inspiration",
+    "title": "Better, not perfect",
+    "text": "Aim for a slightly better day than yesterday. That bar is always reachable."
+  },
+  {
+    "id": "inspire-9",
+    "type": "inspiration",
+    "title": "Look how far",
+    "text": "Think back to a month ago. Whatever has changed since, you did that."
+  },
+  {
+    "id": "inspire-10",
+    "type": "inspiration",
+    "title": "Choose again",
+    "text": "Every morning is a fresh vote for the person you want to become. You voted well today."
+  },
+  {
+    "id": "inspire-11",
+    "type": "inspiration",
+    "title": "Steady wins",
+    "text": "Fast is exciting, but steady is what actually arrives."
+  },
+  {
+    "id": "inspire-12",
+    "type": "inspiration",
+    "title": "Good things take root",
+    "text": "What you water daily grows, even when you can't see it yet."
+  }
+]

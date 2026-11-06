@@ -108,7 +108,8 @@ legend { font-size: 11px; padding: 0; margin-bottom: 8px; }
 .minutes-form { display: flex; gap: 4px; align-items: center; padding: 4px 2px; color: var(--ink); white-space: nowrap; cursor: text; font-size: 12px; font-weight: 500; }
 .minutes-form > span { color: var(--ink); font-weight: 500; }
 .minutes-form input { width: 25px; padding: 1px; margin: 0; font-size: 12px; font-weight: 500; color: var(--ink); border: 0; border-bottom: 1px dashed transparent; border-radius: 0; background: transparent; text-align: right; appearance: textfield; }
-.minutes-form input:hover, .minutes-form input:focus { border-bottom-color: var(--accent); }
+.minutes-form input:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); border-radius: 8px; }
+.minutes-form input:focus, .minutes-form input:focus-visible { outline: none; border-bottom-color: transparent; border-radius: 8px; background: color-mix(in srgb, var(--accent) 8%, transparent); box-shadow: none; }
 .minutes-form input::-webkit-inner-spin-button, .minutes-form input::-webkit-outer-spin-button { appearance: none; margin: 0; }
 .preview-minutes { display: flex; align-items: center; gap: 5px; }
 .habit-actions { flex-shrink: 0; }
@@ -147,3 +148,29 @@ legend { font-size: 11px; padding: 0; margin-bottom: 8px; }
 #repeat-controls > label { margin-top: 12px; }
 footer { display: flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 7px; background: var(--paper); text-align: center; padding: 10px 18px; border-top: 1px solid #e9e8df; font-size: 10px; color: var(--muted); z-index: 2; }
 .status-dot { width: 5px; height: 5px; flex-shrink: 0; border-radius: 50%; background: var(--accent); }
+#mystery-invite { display: flex; align-items: center; gap: 10px; width: calc(100% - 6px); margin: 17px 6px 12px 0; padding: 12px; background: var(--soft); border-color: var(--accent); text-align: left; }
+#mystery-invite svg { width: 24px; height: 24px; fill: none; stroke: var(--ink); stroke-width: 1.4; stroke-linejoin: round; }
+#mystery-invite span:first-of-type { flex: 1; }
+#mystery-invite span:last-child { font-size: 11px; }
+
+/* A dedicated little reward, with room to enjoy it. */
+#reward { text-align: center; padding: 16px 10px 20px; }
+.reward-eyebrow { font-size: 9px; letter-spacing: .18em; color: var(--accent); font-weight: 700; }
+.reward-art { position: relative; width: 154px; margin: 10px auto 0; border-radius: 50%; background: radial-gradient(ellipse, #eedfba88, transparent 70%); }
+.reward-art svg { width: 130px; height: 130px; filter: drop-shadow(3px 7px 0 #b4935018); }
+.present-box { fill: #ead5a0; stroke: #b49350; stroke-width: 1.5; }
+.present-lid { fill: #f3e2b8; stroke: #b49350; stroke-width: 1.5; }
+.present-ribbon { fill: var(--accent); }
+.present-bow { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; }
+.reward-spark { position: absolute; color: #c8a35a; font-size: 21px; }
+.spark-one { left: 0; top: 20px; }.spark-two { right: 0; top: 48px; }.spark-three { left: 14px; bottom: 14px; font-size: 12px; }
+.reward-kicker { font-size: 11px; color: var(--muted); margin: 0 0 14px; }
+#reward-title { font-size: 24px; line-height: 1.25; margin: 0 0 16px; }
+#reward-text { font-family: Georgia, serif; font-size: 19px; line-height: 1.6; margin: 0; white-space: pre-line; }
+#reward-author { font-size: 12px; color: var(--muted); margin: 12px 0; }
+.reward-divider { color: #c8a35a; margin: 18px 0 8px; font-size: 13px; }
+.reward-signoff { font-size: 11px; color: var(--muted); margin: 0 0 20px; }
+#reward-close { border-radius: 22px; padding: 11px 22px; }
+#reward:not([hidden]) { animation: reward-arrive .45s ease-out; }
+@keyframes reward-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { #reward { animation: none !important; } }

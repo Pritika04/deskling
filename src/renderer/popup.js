@@ -18,7 +18,10 @@ function showView(view) {
   currentView = view;
   document.querySelectorAll('[data-home]').forEach(element => { element.hidden = view !== 'home'; });
   $('#settings').hidden = view !== 'settings'; $('#editor').hidden = view !== 'editor';
+  $('#reward').hidden = view !== 'reward';
+  document.querySelector('footer').hidden = view === 'reward';
   $('#settings-toggle').hidden = view !== 'home'; $('#back-home').hidden = view === 'home';
+  if (view === 'reward') $('#back-home').hidden = true;
   $('#settings-toggle').setAttribute('aria-expanded', String(view === 'settings'));
   scroller.scrollTo(0, view === 'home' ? homeScroll : 0);
   message('');
@@ -108,6 +111,7 @@ function render(next = state) {
   const completedIds = new Set(habits.filter(habit => (data.entries.find(entry => entry.id === habit.id)?.amount || 0) >= habit.goal).map(habit => habit.id));
   $('#empty').hidden = habits.length > 0;
   $('#habit-section').hidden = habits.length === 0;
+  $('#mystery-invite').hidden = !HabitDomain.mysteryStatus(state, now).available;
   $('#pending-title').textContent = 'Habits';
   const list = $('#habit-list'); list.replaceChildren();
   for (const habit of habits) {
@@ -302,6 +306,7 @@ $('#remove-habit').addEventListener('click', async () => {
 $('#settings-toggle').addEventListener('click', () => { showView('settings'); $('#avatar-choice').focus({ preventScroll: true }); });
 $('#back-home').addEventListener('click', () => { editing = null; showView('home'); });
 $('#settings-done').addEventListener('click', () => showView('home'));
+$('#mystery-invite').addEventListener('click', () => perform(() => window.buddy.openMystery()));
 for (const [selector, key, getValue] of [
   ['#avatar-choice', 'avatar', element => element.value], ['#palette', 'palette', element => element.value],
   ['#accent', 'accent', element => element.value],
@@ -312,6 +317,7 @@ for (const [selector, key, getValue] of [
 $('#reset-accent').addEventListener('click', async () => { const result = await perform(() => window.buddy.updateSettings({ accent: null })); if (result) render(result); });
 $('#close').addEventListener('click', () => window.buddy.closePopup());
 document.addEventListener('keydown', event => { if (event.key === 'Escape') {
+  if (currentView === 'reward') { window.buddy.closePopup(); return; }
   if (currentView !== 'home') { editing = null; showView('home'); } else window.buddy.closePopup();
 } });
 function makeClock(containerSelector, sourceSelector, label) {
@@ -379,6 +385,20 @@ const fitObserver = new ResizeObserver(scheduleFit);
 for (const selector of ['header', 'main', 'footer']) fitObserver.observe(document.querySelector(selector));
 const contentObserver = new MutationObserver(scheduleFit);
 contentObserver.observe(document.querySelector('main'), { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'open'] });
+const rewardButtonLabels = ['Keep me company', 'Come hang out', 'Thanks, little buddy', 'Stay a little longer', 'Let’s enjoy the day'];
+let lastRewardButtonLabel = '';
+window.buddy.onReward(item => {
+  if (!item) { showView('home'); return; }
+  $('#reward-title').textContent = item.title;
+  $('#reward-text').textContent = item.text;
+  $('#reward-author').textContent = item.author ? `— ${item.author}` : '';
+  const labels = rewardButtonLabels.filter(label => label !== lastRewardButtonLabel);
+  lastRewardButtonLabel = labels[Math.floor(Math.random() * labels.length)];
+  $('#reward-close').textContent = lastRewardButtonLabel;
+  showView('reward');
+  $('#reward-close').focus();
+});
+$('#reward-close').addEventListener('click', () => window.buddy.closePopup());
 window.buddy.onState(render);
 window.buddy.getState().then(next => { render(next); document.body.dataset.ready = 'true'; }).catch(() => message('Could not read your local data. Please restart your buddy.'));
 setInterval(() => { if (!draggedHabit && !document.activeElement.closest('.minutes-form')) render(); }, 30000);

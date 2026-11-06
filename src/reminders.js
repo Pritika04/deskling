@@ -25,16 +25,30 @@ function dueReminders(state, now = new Date()) {
   return due;
 }
 
+function processReminders(store, notify, now = new Date()) {
+  if (store.snapshot().settings.remindersPaused) { store.clearReminderQueue(); return; }
+  for (const { habit, slot } of dueReminders(store.snapshot(), now)) store.enqueueReminder(habit.id, slot);
+  const clock = now.getHours() * 60 + now.getMinutes();
+  for (const queued of store.snapshot().reminderQueue) {
+    const state = store.snapshot();
+    const habit = state.habits.find(item => item.id === queued.habitId && !item.archived);
+    const entry = todayEntries(state, now).find(item => item.id === queued.habitId);
+    if (!habit || queued.day !== localDay(now) || clock - Number(queued.slot.split(':')[1]) > 15 || (entry?.amount || 0) >= habit.goal) {
+      store.removeReminder(queued.habitId, queued.slot); continue;
+    }
+    if (notify(habit) !== false) store.removeReminder(queued.habitId, queued.slot);
+    break; // One calm bubble at a time, including simultaneous reminder times.
+  }
+}
+
 function startReminders(store, notify, onError = console.error) {
   const tick = () => {
     try {
-      for (const { habit, slot } of dueReminders(store.snapshot())) {
-        if (notify(habit) !== false) store.markReminder(habit.id, slot);
-      }
+      processReminders(store, notify);
     } catch (error) { onError(error); }
   };
   tick();
   const timer = setInterval(tick, 15000);
   return () => clearInterval(timer);
 }
-module.exports = { dueReminders, startReminders };
+module.exports = { dueReminders, processReminders, startReminders };

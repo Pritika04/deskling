@@ -68,5 +68,13 @@
     }
     return { cells, today: data.today, title: mode === 'year' ? String(year) : new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(new Date(`${first}T12:00:00`)) };
   }
-  return { localDay, shiftDay, todayEntries, orderedHabits, daySummary, summary, calendar };
+  function mysteryStatus(state, now = new Date()) {
+    const day = localDay(now, state.settings.dayStartHour);
+    const habits = state.habits.filter(habit => !habit.archived);
+    const entries = todayEntries(state, now);
+    const claimedIds = state.mystery?.days[day]?.claimedIds || [];
+    const allComplete = habits.length > 0 && habits.every(habit => (entries.find(entry => entry.id === habit.id)?.amount || 0) >= habit.goal);
+    return { day, available: allComplete && habits.some(habit => !claimedIds.includes(habit.id)), opened: state.mystery?.days[day]?.claims.length || 0 };
+  }
+  return { localDay, shiftDay, todayEntries, orderedHabits, daySummary, summary, calendar, mysteryStatus };
 });

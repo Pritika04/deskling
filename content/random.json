@@ -1,0 +1,490 @@
+[
+  {
+    "id": "kind-1",
+    "type": "kindness",
+    "title": "Send a thank-you",
+    "text": "Text someone who helped you once and tell them it mattered. It will probably make their whole day."
+  },
+  {
+    "id": "kind-2",
+    "type": "kindness",
+    "title": "Real compliment",
+    "text": "Give one specific compliment today. 'I love how you explain things' beats 'nice job' every time."
+  },
+  {
+    "id": "kind-3",
+    "type": "kindness",
+    "title": "Hold the door",
+    "text": "Small courtesies are contagious. Hold a door, let someone merge, or let someone go ahead of you."
+  },
+  {
+    "id": "kind-4",
+    "type": "kindness",
+    "title": "Check in",
+    "text": "Message a friend you haven't spoken to in a while with just: 'Thinking of you. How are you really?'"
+  },
+  {
+    "id": "kind-5",
+    "type": "kindness",
+    "title": "Pay it forward",
+    "text": "Next time you buy coffee, consider covering the next person's. Or just leave a generous tip."
+  },
+  {
+    "id": "kind-6",
+    "type": "kindness",
+    "title": "Listen fully",
+    "text": "In your next conversation, put the phone down and listen without planning your reply."
+  },
+  {
+    "id": "kind-7",
+    "type": "kindness",
+    "title": "Give something away",
+    "text": "Look around for one thing you no longer use that someone else might love. Pass it along."
+  },
+  {
+    "id": "kind-8",
+    "type": "kindness",
+    "title": "Leave a good review",
+    "text": "Write a kind review for a small business or creator you like. It helps more than you'd think."
+  },
+  {
+    "id": "kind-9",
+    "type": "kindness",
+    "title": "Be gentle with yourself",
+    "text": "Talk to yourself today the way you'd talk to a good friend having a rough time."
+  },
+  {
+    "id": "kind-10",
+    "type": "kindness",
+    "title": "Share the credit",
+    "text": "If something went well recently, name someone who helped make it happen."
+  },
+  {
+    "id": "kind-11",
+    "type": "kindness",
+    "title": "Offer a hand",
+    "text": "Ask someone near you, 'Is there anything I can help with?' Then mean it."
+  },
+  {
+    "id": "kind-12",
+    "type": "kindness",
+    "title": "Say it now",
+    "text": "If you appreciate someone, don't save it for later. Tell them today."
+  },
+  {
+    "id": "challenge-1",
+    "type": "challenge",
+    "title": "Opposite hand",
+    "text": "Brush your teeth with your non-dominant hand tomorrow. Notice how awkward and alive it feels."
+  },
+  {
+    "id": "challenge-2",
+    "type": "challenge",
+    "title": "Five new things",
+    "text": "Tomorrow, try to notice five things you've walked past a hundred times and never really looked at."
+  },
+  {
+    "id": "challenge-3",
+    "type": "challenge",
+    "title": "One new word",
+    "text": "Learn one new word today and use it in a sentence before bed."
+  },
+  {
+    "id": "challenge-4",
+    "type": "challenge",
+    "title": "Different route",
+    "text": "Take a different way to somewhere you go often. See what you've been missing."
+  },
+  {
+    "id": "challenge-5",
+    "type": "challenge",
+    "title": "Ask a question",
+    "text": "Ask someone a question you've always been curious about but never asked."
+  },
+  {
+    "id": "challenge-6",
+    "type": "challenge",
+    "title": "Eat the rainbow",
+    "text": "Try to eat three different colors of food tomorrow. Bonus points for one you've never tried."
+  },
+  {
+    "id": "challenge-7",
+    "type": "challenge",
+    "title": "Phone-free hour",
+    "text": "Spend one hour tomorrow without your phone. See what your mind does with the space."
+  },
+  {
+    "id": "challenge-8",
+    "type": "challenge",
+    "title": "Draw something",
+    "text": "Draw something in front of you for two minutes. It can be terrible. That's the point."
+  },
+  {
+    "id": "challenge-9",
+    "type": "challenge",
+    "title": "Stretch your comfort zone",
+    "text": "Do one thing tomorrow that's slightly outside your comfort zone. A tiny bit is plenty."
+  },
+  {
+    "id": "challenge-10",
+    "type": "challenge",
+    "title": "Sunrise or sunset",
+    "text": "Catch one sunrise or sunset this week. Just watch it, with no photo required."
+  },
+  {
+    "id": "challenge-11",
+    "type": "challenge",
+    "title": "Teach something",
+    "text": "Explain something you know to someone else. Teaching is the fastest way to understand it better."
+  },
+  {
+    "id": "challenge-12",
+    "type": "challenge",
+    "title": "Play a song",
+    "text": "Listen to an album you haven't heard in years, all the way through."
+  },
+  {
+    "id": "prod-1",
+    "type": "productivity",
+    "title": "The two-minute rule",
+    "text": "If a task takes under two minutes, do it right now. It costs less than remembering it."
+  },
+  {
+    "id": "prod-2",
+    "type": "productivity",
+    "title": "Top three",
+    "text": "Tonight, write the three things that would make tomorrow a good day. Ignore the rest."
+  },
+  {
+    "id": "prod-3",
+    "type": "productivity",
+    "title": "Eat the frog",
+    "text": "Do the thing you're dreading first. The rest of the day will feel lighter."
+  },
+  {
+    "id": "prod-4",
+    "type": "productivity",
+    "title": "20-20-20",
+    "text": "Every 20 minutes at a screen, look at something 20 feet away for 20 seconds. Your eyes will thank you."
+  },
+  {
+    "id": "prod-5",
+    "type": "productivity",
+    "title": "Just five minutes",
+    "text": "Can't start? Promise yourself five minutes. Starting is the hard part, and most of the time you'll keep going."
+  },
+  {
+    "id": "prod-6",
+    "type": "productivity",
+    "title": "One tab",
+    "text": "Close every browser tab you aren't actively using. A clear screen helps with a clear head."
+  },
+  {
+    "id": "prod-7",
+    "type": "productivity",
+    "title": "Prep tomorrow",
+    "text": "Set out your water bottle, clothes, or notes tonight. Morning you will be quietly grateful."
+  },
+  {
+    "id": "prod-8",
+    "type": "productivity",
+    "title": "Batch the small stuff",
+    "text": "Group quick tasks like replies, errands and emails into one block instead of scattering them."
+  },
+  {
+    "id": "prod-9",
+    "type": "productivity",
+    "title": "Take real breaks",
+    "text": "A real break means standing up, moving, or looking out a window, not switching to another screen."
+  },
+  {
+    "id": "prod-10",
+    "type": "productivity",
+    "title": "Done beats perfect",
+    "text": "Finish a rough version first. You can't improve something that doesn't exist yet."
+  },
+  {
+    "id": "prod-11",
+    "type": "productivity",
+    "title": "Name the next step",
+    "text": "When a task feels huge, write down only the very next physical action. Then do just that."
+  },
+  {
+    "id": "prod-12",
+    "type": "productivity",
+    "title": "Protect your peak",
+    "text": "Notice when in the day your mind is sharpest, and save that time for the hardest work."
+  },
+  {
+    "id": "joke-1",
+    "type": "joke",
+    "title": "Make it a good one",
+    "text": "Why don't scientists trust atoms?",
+    "answer": "Because they make up everything."
+  },
+  {
+    "id": "joke-2",
+    "type": "joke",
+    "title": "Pasta puns",
+    "text": "What do you call a fake noodle?",
+    "answer": "An impasta."
+  },
+  {
+    "id": "joke-3",
+    "type": "joke",
+    "title": "Award season",
+    "text": "Why did the scarecrow win an award?",
+    "answer": "He was outstanding in his field."
+  },
+  {
+    "id": "joke-4",
+    "type": "joke",
+    "title": "Cheesy",
+    "text": "What do you call cheese that isn't yours?",
+    "answer": "Nacho cheese."
+  },
+  {
+    "id": "joke-5",
+    "type": "joke",
+    "title": "Rough day",
+    "text": "Why did the bicycle fall over?",
+    "answer": "It was two tired."
+  },
+  {
+    "id": "joke-6",
+    "type": "joke",
+    "title": "Birds and veggies",
+    "text": "What's orange and sounds like a parrot?",
+    "answer": "A carrot."
+  },
+  {
+    "id": "joke-7",
+    "type": "joke",
+    "title": "Cold climate",
+    "text": "How does a penguin build its house?",
+    "answer": "Igloos it together."
+  },
+  {
+    "id": "joke-8",
+    "type": "joke",
+    "title": "Beach talk",
+    "text": "What did the ocean say to the beach?",
+    "answer": "Nothing, it just waved."
+  },
+  {
+    "id": "joke-9",
+    "type": "joke",
+    "title": "Crime scene",
+    "text": "Why did the coffee file a police report?",
+    "answer": "It got mugged."
+  },
+  {
+    "id": "joke-10",
+    "type": "joke",
+    "title": "Soft bite",
+    "text": "What do you call a bear with no teeth?",
+    "answer": "A gummy bear."
+  },
+  {
+    "id": "joke-11",
+    "type": "joke",
+    "title": "Buzzworthy",
+    "text": "Why do bees have sticky hair?",
+    "answer": "Because they use honeycombs."
+  },
+  {
+    "id": "joke-12",
+    "type": "joke",
+    "title": "Facial hair",
+    "text": "I used to hate facial hair, but then it grew on me."
+  },
+  {
+    "id": "joke-13",
+    "type": "joke",
+    "title": "Blushing",
+    "text": "Why did the tomato turn red?",
+    "answer": "It saw the salad dressing."
+  },
+  {
+    "id": "joke-14",
+    "type": "joke",
+    "title": "Cat color",
+    "text": "What's a cat's favorite color?",
+    "answer": "Purr-ple."
+  },
+  {
+    "id": "riddle-1",
+    "type": "riddle",
+    "title": "Riddle me this",
+    "text": "What has hands but can't clap?",
+    "answer": "A clock."
+  },
+  {
+    "id": "riddle-2",
+    "type": "riddle",
+    "title": "Riddle me this",
+    "text": "What gets wetter the more it dries?",
+    "answer": "A towel."
+  },
+  {
+    "id": "riddle-3",
+    "type": "riddle",
+    "title": "Riddle me this",
+    "text": "What has keys but can't open locks?",
+    "answer": "A piano."
+  },
+  {
+    "id": "riddle-4",
+    "type": "riddle",
+    "title": "Riddle me this",
+    "text": "What can you catch but never throw?",
+    "answer": "A cold."
+  },
+  {
+    "id": "riddle-5",
+    "type": "riddle",
+    "title": "Riddle me this",
+    "text": "The more of me you take, the more you leave behind. What am I?",
+    "answer": "Footsteps."
+  },
+  {
+    "id": "riddle-6",
+    "type": "riddle",
+    "title": "Riddle me this",
+    "text": "What has a head and a tail but no body?",
+    "answer": "A coin."
+  },
+  {
+    "id": "riddle-7",
+    "type": "riddle",
+    "title": "Riddle me this",
+    "text": "What goes up but never comes down?",
+    "answer": "Your age."
+  },
+  {
+    "id": "riddle-8",
+    "type": "riddle",
+    "title": "Riddle me this",
+    "text": "What has many teeth but can't bite?",
+    "answer": "A comb."
+  },
+  {
+    "id": "riddle-9",
+    "type": "riddle",
+    "title": "Riddle me this",
+    "text": "I'm tall when I'm young and short when I'm old. What am I?",
+    "answer": "A candle."
+  },
+  {
+    "id": "riddle-10",
+    "type": "riddle",
+    "title": "Riddle me this",
+    "text": "What has one eye but can't see?",
+    "answer": "A needle."
+  },
+  {
+    "id": "riddle-11",
+    "type": "riddle",
+    "title": "Riddle me this",
+    "text": "What belongs to you, but other people use it more than you do?",
+    "answer": "Your name."
+  },
+  {
+    "id": "riddle-12",
+    "type": "riddle",
+    "title": "Riddle me this",
+    "text": "What can fill a room but takes up no space?",
+    "answer": "Light."
+  },
+  {
+    "id": "joke-15",
+    "type": "joke",
+    "title": "Sad book",
+    "text": "Why did the math book look so sad?",
+    "answer": "It had too many problems."
+  },
+  {
+    "id": "joke-16",
+    "type": "joke",
+    "title": "Dino nap",
+    "text": "What do you call a sleeping dinosaur?",
+    "answer": "A dino-snore."
+  },
+  {
+    "id": "joke-17",
+    "type": "joke",
+    "title": "Brave bones",
+    "text": "Why don't skeletons fight each other?",
+    "answer": "They don't have the guts."
+  },
+  {
+    "id": "joke-18",
+    "type": "joke",
+    "title": "Corner talk",
+    "text": "What did one wall say to the other?",
+    "answer": "I'll meet you at the corner."
+  },
+  {
+    "id": "joke-19",
+    "type": "joke",
+    "title": "Crumbs",
+    "text": "Why did the cookie go to the doctor?",
+    "answer": "It felt crummy."
+  },
+  {
+    "id": "joke-20",
+    "type": "joke",
+    "title": "Magic dog",
+    "text": "What do you call a dog that does magic tricks?",
+    "answer": "A labracadabrador."
+  },
+  {
+    "id": "joke-21",
+    "type": "joke",
+    "title": "Chilly laptop",
+    "text": "Why was the computer cold?",
+    "answer": "It left its Windows open."
+  },
+  {
+    "id": "smile-1",
+    "type": "smile",
+    "title": "Serious penguin",
+    "text": "Picture a very serious penguin in a tiny tuxedo giving a long speech about fish. Hold that thought."
+  },
+  {
+    "id": "smile-2",
+    "type": "smile",
+    "title": "Best stick",
+    "text": "Somewhere right now, a dog is meeting a stick it believes is the greatest stick ever found."
+  },
+  {
+    "id": "smile-3",
+    "type": "smile",
+    "title": "Owl parliament",
+    "text": "A group of owls is called a parliament. Picture them debating snacks."
+  },
+  {
+    "id": "smile-4",
+    "type": "smile",
+    "title": "Cat logic",
+    "text": "Every cat that has ever knocked a glass off a table did it while holding eye contact."
+  },
+  {
+    "id": "smile-5",
+    "type": "smile",
+    "title": "Rain boots",
+    "text": "Somewhere a toddler is wearing rain boots on a sunny day and being completely correct about it."
+  },
+  {
+    "id": "smile-6",
+    "type": "smile",
+    "title": "Hot fries",
+    "text": "Be the kind of person who gets genuinely excited when the fries are still hot."
+  },
+  {
+    "id": "smile-7",
+    "type": "smile",
+    "title": "Cotton candy",
+    "text": "A raccoon washing cotton candy and watching it vanish is the most relatable thing in nature."
+  }
+]

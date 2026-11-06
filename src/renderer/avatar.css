@@ -10,6 +10,18 @@ body[data-avatar="plant"] .plant, body[data-avatar="pineapple"] .pineapple, body
 .plant > path:first-child { fill: var(--soft); }
 .plant > path:last-child { fill: var(--accent); }
 #character { transform-origin: 50px 52px; }
+#gift { display: none; transform-origin: 52px 85px; }
+.gift-paper { fill: var(--soft); stroke: var(--accent); }
+.gift-ribbon { fill: var(--accent); }
+.gift-bow { stroke: var(--accent); }
+body[data-state="gift"] #character { display: none; }
+body[data-state="gift"] #gift { display: inline; animation: gift-bounce 3s ease-in-out infinite; }
+.gift-halo { fill: var(--accent); opacity: .12; }
+.gift-spark { fill: #d6ad50; animation: gift-shimmer 2s ease-in-out infinite; }
+body[data-state="gift"] .gift-paper { fill: #f1dca6; stroke: #b49350; }
+@keyframes gift-bounce { 0%, 60%, 100% { transform: translateY(0) rotate(0); } 72% { transform: translateY(-6px) rotate(-5deg); } 82% { transform: translateY(-2px) rotate(5deg); } 90% { transform: translateY(-4px) rotate(-3deg); } }
+@keyframes gift-shimmer { 50% { opacity: .3; } }
+@keyframes gift-wiggle { 0%, 80%, 100% { transform: rotate(0); } 85% { transform: rotate(-5deg); } 90% { transform: rotate(5deg); } 95% { transform: rotate(-3deg); } }
 .happy-mouth, .happy-eyes, .sleepy-mouth, .sleep-marks, .confetti { display: none; }
 body[data-state="smile"] .normal-mouth { stroke-width: 3.5; }
 body[data-state="celebrate"] .normal-mouth, body[data-state="celebrate"] .eye, body[data-state="sleepy"] .normal-mouth { display: none; }

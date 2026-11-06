@@ -1,6 +1,6 @@
 # Habit Buddy
 
-A tiny, gentle desktop habit tracker for Windows and macOS. A floating buddy keeps you company, celebrates your progress, and gets a little sleepy at night. Create your own habits, log small steps, and watch your streak and heat map grow. Choose a buddy and a color palette to make it yours. Everything stays on your device and works offline after setup.
+A tiny, gentle desktop habit tracker for Windows and macOS. A floating buddy keeps you company, offers gentle reminder bubbles, and celebrates your small steps. Finish your habits to discover a one-time mystery box, then enjoy your buddy's company for the rest of the day. Adding and completing another habit earns a new surprise. Choose a buddy and a color palette to make it yours. Everything stays on your device and works offline after setup.
 
 ## Run
 

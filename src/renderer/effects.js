@@ -8,10 +8,14 @@ window.buddy.onReaction(reaction => {
   context.clearRect(0, 0, canvas.width, canvas.height);
   document.body.dataset.state = reaction.state;
   document.documentElement.style.setProperty('--accent', reaction.accent);
-  message.hidden = reaction.state !== 'halfway';
-  message.textContent = reaction.state === 'halfway' ? "You're halfway there!" : '';
-  message.style.left = `${Math.max(8, Math.min(canvas.width - message.offsetWidth - 8, reaction.x - message.offsetWidth / 2))}px`;
-  message.style.top = `${Math.max(10, Math.min(176, reaction.y > 90 ? reaction.y - 90 : reaction.y + 42))}px`;
+  message.hidden = !['halfway', 'reminder', 'mystery'].includes(reaction.state);
+  message.textContent = reaction.state === 'halfway' ? "You're halfway there!" : ['reminder', 'mystery'].includes(reaction.state) ? reaction.message : '';
+  const left = Math.max(8, Math.min(canvas.width - message.offsetWidth - 8, reaction.x - message.offsetWidth / 2));
+  message.style.left = `${left}px`;
+  message.style.setProperty('--tail-left', `${Math.max(14, Math.min(message.offsetWidth - 24, reaction.x - left - 5))}px`);
+  const above = reaction.y - message.offsetHeight - 32;
+  message.dataset.below = above < 8;
+  message.style.top = `${Math.max(8, Math.min((reaction.height || canvas.height) - message.offsetHeight - 8, above >= 8 ? above : reaction.y + 32))}px`;
   if (reaction.state !== 'celebrate') return;
   const colors = [reaction.accent, '#d69165', '#9a79bc', '#dbb84d', '#5e9fa5'];
   const particles = Array.from({ length: 40 }, (_, index) => ({

@@ -3,7 +3,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
-const { localDay, todayEntries, daySummary } = require('./renderer/domain');
+const { localDay, todayEntries, daySummary, mysteryStatus } = require('./renderer/domain');
+const { chooseSurprise } = require('./mystery');
 
 const TYPES = ['count', 'checkbox', 'minutes', 'percent'];
 const CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -22,6 +23,9 @@ function initialState() {
     habits: [],
     days: {},
     reminderDeliveries: {},
+    reminderQueue: [],
+    mystery: { days: {}, usedIds: [], lastType: null },
+    thoughts: { usedIds: [], lastType: null, nextAt: 0 },
   };
 }
 
@@ -46,7 +50,13 @@ function validateState(state) {
   if (!['plant', 'pineapple', 'star'].includes(state.settings.avatar) || !['sage', 'lavender', 'peach', 'ocean'].includes(state.settings.palette) ||
       (state.settings.accent !== null && !/^#[0-9a-f]{6}$/i.test(state.settings.accent))) throw new Error('Invalid appearance settings.');
   state.habits.forEach(validateHabit);
+  if (!state.thoughts || !Array.isArray(state.thoughts.usedIds) || state.thoughts.usedIds.some(id => typeof id !== 'string') || (state.thoughts.lastType !== null && typeof state.thoughts.lastType !== 'string') || !Number.isFinite(state.thoughts.nextAt) || state.thoughts.nextAt < 0) throw new Error('Invalid buddy thought history.');
   if (!state.reminderDeliveries || typeof state.reminderDeliveries !== 'object' || Array.isArray(state.reminderDeliveries) || Object.values(state.reminderDeliveries).some(value => typeof value !== 'string')) throw new Error('Invalid reminder history.');
+  if (!Array.isArray(state.reminderQueue) || state.reminderQueue.some(item => !item || typeof item.habitId !== 'string' || typeof item.slot !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(item.day))) throw new Error('Invalid reminder queue.');
+  if (!state.mystery || !state.mystery.days || typeof state.mystery.days !== 'object' || Array.isArray(state.mystery.days) || !Array.isArray(state.mystery.usedIds) || state.mystery.usedIds.some(id => typeof id !== 'string') || (state.mystery.lastType !== null && typeof state.mystery.lastType !== 'string')) throw new Error('Invalid mystery box history.');
+  for (const [day, reward] of Object.entries(state.mystery.days)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !reward || !Array.isArray(reward.claimedIds) || reward.claimedIds.some(id => typeof id !== 'string') || !Array.isArray(reward.claims) || reward.claims.some(claim => !claim || ['id', 'type', 'title', 'text'].some(key => typeof claim[key] !== 'string'))) throw new Error('Invalid mystery box record.');
+  }
   if (new Set(state.habits.map(habit => habit.id)).size !== state.habits.length) throw new Error('Duplicate habit IDs.');
   for (const [day, entries] of Object.entries(state.days)) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Array.isArray(entries)) throw new Error('Invalid day data.');
@@ -60,9 +70,10 @@ function validateState(state) {
 }
 
 class Store {
-  constructor(filePath, { now = () => new Date() } = {}) {
+  constructor(filePath, { now = () => new Date(), random = Math.random } = {}) {
     this.filePath = filePath;
     this.now = now;
+    this.random = random;
     try {
       this.state = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       // Existing step-2 files predate adjustable buddy size.
@@ -70,6 +81,9 @@ class Store {
       if (this.state?.version === 1 && this.state.settings) {
         if (['cat', 'panda'].includes(this.state.settings.avatar)) this.state.settings.avatar = 'plant';
         if (!Object.hasOwn(this.state, 'reminderDeliveries')) this.state.reminderDeliveries = {};
+        if (!Object.hasOwn(this.state, 'reminderQueue')) this.state.reminderQueue = [];
+        if (!Object.hasOwn(this.state, 'mystery')) this.state.mystery = { days: {}, usedIds: [], lastType: null };
+        if (!Object.hasOwn(this.state, 'thoughts')) this.state.thoughts = { usedIds: [], lastType: null, nextAt: 0 };
         for (const [key, value] of Object.entries(initialState().settings)) {
           if (!Object.hasOwn(this.state.settings, key)) this.state.settings[key] = value;
         }
@@ -165,6 +179,41 @@ class Store {
     const next = this.snapshot();
     next.reminderDeliveries[id] = slot;
     return this.commit(next);
+  }
+
+  enqueueReminder(habitId, slot) {
+    const next = this.snapshot();
+    if (next.reminderDeliveries[habitId] === slot) return next;
+    next.reminderDeliveries[habitId] = slot;
+    next.reminderQueue.push({ habitId, slot, day: localDay(this.now()) });
+    return this.commit(next);
+  }
+
+  removeReminder(habitId, slot) {
+    const next = this.snapshot();
+    next.reminderQueue = next.reminderQueue.filter(item => item.habitId !== habitId || item.slot !== slot);
+    return this.commit(next);
+  }
+
+  clearReminderQueue() {
+    if (!this.state.reminderQueue.length) return this.snapshot();
+    const next = this.snapshot(); next.reminderQueue = []; return this.commit(next);
+  }
+
+  openMystery() {
+    const status = mysteryStatus(this.state, this.now());
+    if (!status.available) return { opened: false, state: this.snapshot() };
+    const next = this.snapshot();
+    const selected = chooseSurprise(next.mystery, this.random);
+    const record = next.mystery.days[status.day] || { claimedIds: [], claims: [] };
+    record.claimedIds = [...new Set([...record.claimedIds, ...next.habits.filter(habit => !habit.archived).map(habit => habit.id)])];
+    record.claims.push(selected.item); next.mystery.days[status.day] = record;
+    next.mystery.usedIds = selected.usedIds; next.mystery.lastType = selected.lastType;
+    return { opened: true, item: selected.item, state: this.commit(next) };
+  }
+
+  saveThoughts(history) {
+    const next = this.snapshot(); next.thoughts = history; return this.commit(next);
   }
 
   logProgress(habitId, amount, { replace = false } = {}) {

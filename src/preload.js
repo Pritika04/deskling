@@ -4,6 +4,12 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('buddy', {
   getState: () => ipcRenderer.invoke('state:get'),
+  openMystery: () => ipcRenderer.invoke('mystery:open'),
+  onReward: callback => {
+    const listener = (_event, item) => callback(item);
+    ipcRenderer.on('mystery:reveal', listener);
+    return () => ipcRenderer.removeListener('mystery:reveal', listener);
+  },
   addHabit: data => ipcRenderer.invoke('habit:add', data),
   editHabit: (id, data) => ipcRenderer.invoke('habit:edit', id, data),
   archiveHabit: id => ipcRenderer.invoke('habit:archive', id),

@@ -6,16 +6,21 @@ let reactionTimer;
 let reacting = false;
 function idleState() {
   if (!buddyState) return;
+  const gift = HabitDomain.mysteryStatus(buddyState).available;
+  button.setAttribute('aria-label', gift ? 'Open your mystery box. Drag to move.' : 'Open or close Habit Buddy. Drag to move.');
+  button.title = gift ? 'A little surprise is waiting. Click to open.' : 'Click for your day · drag to move';
+  if (gift) { document.body.dataset.state = 'gift'; return; }
   const hour = new Date().getHours();
   const untouched = !HabitDomain.summary(buddyState).progress;
   document.body.dataset.state = hour >= 22 || hour < 6 || (hour >= 18 && untouched) ? 'sleepy' : 'idle';
 }
-function react({ state, followUp, direction = 1 }) {
+function react({ state, followUp, direction = 1, hold = false }) {
   clearTimeout(reactionTimer);
   reacting = state !== 'idle';
   document.body.dataset.state = state;
   document.body.dataset.direction = direction;
-  if (state === 'idle') return;
+  if (state === 'idle') { idleState(); return; }
+  if (hold) return;
   reactionTimer = setTimeout(() => {
     reacting = false;
     if (followUp) react({ state: followUp }); else idleState();

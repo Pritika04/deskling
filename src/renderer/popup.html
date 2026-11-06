@@ -15,6 +15,16 @@
     <button id="close" class="icon" aria-label="Close popup"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
   </div></header>
   <main>
+    <section id="reward" hidden aria-label="Your surprise">
+      <p class="reward-eyebrow">YOU SHOWED UP FOR YOURSELF</p>
+      <div class="reward-art" aria-hidden="true"><span class="reward-spark spark-one">✦</span><span class="reward-spark spark-two">✧</span><svg viewBox="0 0 100 100"><path class="present-box" d="M23 43h54v39q0 6-6 6H29q-6 0-6-6Z"/><path class="present-lid" d="M18 32h64v16H18Z"/><path class="present-ribbon" d="M45 32h10v56H45Z"/><path class="present-bow" d="M50 32C18 34 24 6 40 18L50 32C82 34 76 6 60 18Z"/></svg><span class="reward-spark spark-three">✦</span></div>
+      <p class="reward-kicker">A little something, just for you.</p>
+      <h1 id="reward-title"></h1>
+      <p id="reward-text"></p><p id="reward-author"></p>
+      <div class="reward-divider">✦</div>
+      <p class="reward-signoff">Small steps. A day worth celebrating.</p>
+      <button id="reward-close" class="primary" type="button">Keep me company</button>
+    </section>
     <p id="date" class="muted date" data-home></p><h1 data-home>A little space for you.</h1>
     <details id="history" class="history" data-home><summary><span class="history-heading">Little steps add up <svg class="tiny-heart" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 17 3 10C-1 5 5 0 10 5c5-5 11 0 7 5Z"/></svg></span><span id="month-caption" class="muted small"></span><svg class="history-chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"/></svg></summary>
       <div class="history-content"><div class="section-heading"><h2 id="calendar-title"></h2><button id="calendar-toggle" class="text-button" type="button">See whole year</button></div>
@@ -31,7 +41,7 @@
     </section>
     <section id="today" data-home>
       <div id="empty"><div class="empty-mark" aria-hidden="true">✦</div><h2>One small thing at a time.</h2><p class="muted">Choose something that feels good for you.</p><button id="first-habit" class="primary">Add your first habit</button></div>
-      <div id="habit-section" hidden><div class="section-heading"><h2 id="pending-title">Habits</h2><button id="add-habit" class="text-button">+ Add habit</button></div><div id="habit-list"></div></div>
+      <div id="habit-section" hidden><div class="section-heading"><h2 id="pending-title">Habits</h2><button id="add-habit" class="text-button">+ Add habit</button></div><div id="habit-list"></div><button id="mystery-invite" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11h16v10H4zM3 7h18v4H3zM12 7v14M12 7C3 7 7 0 12 7Zm0 0c9 0 5-7 0 0Z"/></svg><span>A little surprise for you</span><span>Open</span></button></div>
     </section>
     <section id="editor" hidden>
       <h2 id="form-title">A small new habit</h2>

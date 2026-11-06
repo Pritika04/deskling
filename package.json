@@ -8,7 +8,7 @@
     "start": "electron .",
     "smoke": "electron . --smoke-test",
     "test": "node --test",
-    "check": "node --check src/main.js && node --check src/preload.js && node --check src/store.js && node --check src/reminders.js && node --check src/renderer/domain.js && node --check src/renderer/theme.js && node --check src/renderer/avatar.js && node --check src/renderer/effects.js && node --check src/renderer/popup.js"
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/store.js && node --check src/reminders.js && node --check src/mystery.js && node --check src/thoughts.js && node --check src/renderer/domain.js && node --check src/renderer/theme.js && node --check src/renderer/avatar.js && node --check src/renderer/effects.js && node --check src/renderer/popup.js"
   },
   "devDependencies": {
     "electron": "45.2.3"
