@@ -1,6 +1,27 @@
 'use strict';
 
 const button = document.querySelector('#buddy');
+let buddyState;
+let reactionTimer;
+let reacting = false;
+function idleState() {
+  if (!buddyState) return;
+  const hour = new Date().getHours();
+  const untouched = !HabitDomain.summary(buddyState).progress;
+  document.body.dataset.state = hour >= 22 || hour < 6 || (hour >= 18 && untouched) ? 'sleepy' : 'idle';
+}
+function react({ state, followUp, direction = 1 }) {
+  clearTimeout(reactionTimer);
+  reacting = state !== 'idle';
+  document.body.dataset.state = state;
+  document.body.dataset.direction = direction;
+  if (state === 'idle') return;
+  reactionTimer = setTimeout(() => {
+    reacting = false;
+    if (followUp) react({ state: followUp }); else idleState();
+  }, state === 'sleepy' ? 10000 : state === 'roll' ? 4100 : 2200);
+}
+window.buddy.onReaction(react);
 let pointer = null;
 let moved = false;
 button.addEventListener('pointerdown', event => {
@@ -29,6 +50,10 @@ const resizeEdges = document.querySelectorAll('.resize-edge');
 let resizing = null;
 let currentSize = 68;
 function updateSize(state) {
+  buddyState = state;
+  BuddyTheme.apply(state.settings);
+  document.body.dataset.avatar = state.settings.avatar;
+  if (!reacting) idleState();
   currentSize = state.settings.avatarSize;
   for (const edge of resizeEdges) edge.setAttribute('aria-valuenow', currentSize);
 }
@@ -67,9 +92,11 @@ for (const edge of resizeEdges) {
 }
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+window.buddy.motionPreference(reducedMotion.matches);
+reducedMotion.addEventListener('change', event => window.buddy.motionPreference(event.matches));
 function scheduleExpression() {
   setTimeout(() => {
-    if (!pointer && resizing === null && !reducedMotion.matches && !document.hidden) {
+    if (!pointer && resizing === null && !reacting && document.body.dataset.state === 'idle' && !reducedMotion.matches && !document.hidden) {
       const expression = Math.random() < .18 ? 'wink' : 'blink';
       button.classList.add(expression);
       setTimeout(() => button.classList.remove(expression), 350);
@@ -78,4 +105,7 @@ function scheduleExpression() {
   }, 4000 + Math.random() * 5000);
 }
 scheduleExpression();
+setInterval(() => {
+  if (!reacting && !pointer && resizing === null) idleState();
+}, 30000);
 document.body.dataset.ready = 'true';

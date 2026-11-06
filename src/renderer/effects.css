@@ -1,0 +1,5 @@
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent; pointer-events: none; }
+canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+#message { position: absolute; padding: 10px 14px; max-width: 250px; border: 1px solid var(--accent, #789568); border-radius: 15px; background: #faf8f3; color: #3e5146; font: 600 13px/1.4 'Segoe UI', -apple-system, sans-serif; white-space: nowrap; box-shadow: 0 3px 12px #3e51461c; }
+[hidden] { display: none !important; }

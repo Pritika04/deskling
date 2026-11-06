@@ -1,10 +1,38 @@
-:root { color-scheme: light; }
+:root { color-scheme: light; --accent: #789568; --soft: #c3d5b6; }
 * { box-sizing: border-box; }
 html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
 button { display: block; width: 100%; height: 100%; padding: 5px; border: 0; background: transparent; cursor: grab; touch-action: none; user-select: none; }
 button:active { cursor: grabbing; }
 button:focus-visible { outline: 2px dashed #70896a; outline-offset: -9px; border-radius: 24px; }
 svg { width: 100%; height: 100%; pointer-events: none; }
+.body-shape { display: none; fill: var(--soft); }
+body[data-avatar="plant"] .plant, body[data-avatar="pineapple"] .pineapple, body[data-avatar="star"] .star { display: inline; }
+.plant > path:first-child { fill: var(--soft); }
+.plant > path:last-child { fill: var(--accent); }
+#character { transform-origin: 50px 52px; }
+.happy-mouth, .happy-eyes, .sleepy-mouth, .sleep-marks, .confetti { display: none; }
+body[data-state="smile"] .normal-mouth { stroke-width: 3.5; }
+body[data-state="celebrate"] .normal-mouth, body[data-state="celebrate"] .eye, body[data-state="sleepy"] .normal-mouth { display: none; }
+body[data-state="celebrate"] .happy-mouth, body[data-state="celebrate"] .happy-eyes, body[data-state="sleepy"] .sleepy-mouth, body[data-state="sleepy"] .sleep-marks { display: inline; }
+body[data-state="halfway"] .normal-mouth, body[data-state="halfway"] .eye { display: none; }
+body[data-state="halfway"] .happy-mouth, body[data-state="halfway"] .happy-eyes { display: inline; }
+body[data-state="halfway"] #character { animation: hop .5s ease-in-out 2; }
+body[data-state="sleepy"] .eye { transform: scaleY(.12); }
+body[data-state="sleepy"] #character { animation: breathe 3s ease-in-out infinite; }
+body[data-state="celebrate"] #character { animation: hop .5s ease-in-out 2; }
+body[data-state="celebrate"] .confetti { display: inline; }
+body[data-state="celebrate"] .confetti { stroke-width: 5; }
+body[data-state="celebrate"] .confetti path { animation: confetti-pop 1.6s ease-out both; transform-box: fill-box; transform-origin: center; }
+body[data-state="celebrate"] .confetti path:nth-child(2n) { animation-delay: 100ms; }
+body[data-state="celebrate"] .confetti path:nth-child(3n) { animation-delay: 200ms; }
+body[data-state="roll"] #character { animation: desktop-roll 4s ease-in-out; }
+body[data-state="roll"][data-direction="-1"] #character { animation-name: desktop-roll-left; }
+body[data-state="wink"] .eye-right { animation: blink 450ms ease-in-out 2; }
+@keyframes breathe { 50% { transform: translateY(1px) scaleY(.98); } }
+@keyframes hop { 50% { transform: translateY(-6px) rotate(3deg); } }
+@keyframes desktop-roll { 0%, 100% { transform: rotate(0) scale(.76); } 50% { transform: rotate(720deg) scale(.76); } }
+@keyframes desktop-roll-left { 0%, 100% { transform: rotate(0) scale(.76); } 50% { transform: rotate(-720deg) scale(.76); } }
+@keyframes confetti-pop { 0% { opacity: 0; transform: translateY(18px) scale(.2); } 20% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-7px) rotate(100deg) scale(1); } }
 .resize-edge { position: absolute; left: 25%; width: 50%; height: 10px; cursor: ns-resize; touch-action: none; user-select: none; }
 .resize-edge.top { top: 0; }
 .resize-edge.bottom { bottom: 0; }
@@ -19,5 +47,6 @@ body:hover .resize-edge::after, .resize-edge:focus-visible::after, body.resizing
   45%, 60% { transform: scaleY(.08); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .blink .eye, .wink .eye-right { animation: none; }
+  *, body[data-state] #character, body[data-state] .eye, body[data-state] .confetti { animation: none !important; }
+  body[data-state="wink"] .eye-right { transform: scaleY(.12); }
 }

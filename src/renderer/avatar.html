@@ -6,21 +6,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Habit Buddy</title>
   <link rel="stylesheet" href="avatar.css">
+  <script defer src="domain.js"></script>
+  <script defer src="theme.js"></script>
   <script defer src="avatar.js"></script>
 </head>
 <body>
   <button id="buddy" aria-label="Open or close Habit Buddy. Drag to move." title="Click for your day · drag to move">
     <svg viewBox="0 0 100 100" aria-hidden="true">
       <ellipse cx="50" cy="91" rx="29" ry="4" fill="#263f31" opacity=".12"/>
+      <g id="character">
+      <g class="body-shape plant">
       <path d="M17 63C12 42 26 20 49 20C72 20 87 39 83 62C81 79 68 87 50 87C30 87 20 79 17 63Z" fill="#c3d5b6" stroke="#70896a" stroke-width="2"/>
       <path d="M47 21C43 9 52 6 61 9C61 17 55 22 47 21Z" fill="#78986b"/>
+      </g>
+      <g class="body-shape pineapple"><path d="M34 29L25 11L44 21L49 5L57 21L76 10L66 31" fill="#78986b" stroke="#70896a" stroke-width="2"/><path d="M50 26Q81 25 80 60Q81 88 50 87Q19 88 20 60Q19 26 50 26Z" stroke="#70896a" stroke-width="2"/><path d="M25 40L75 75M23 60L56 85M43 28L78 53M75 40L25 75M77 60L44 85M57 28L22 53" fill="none" stroke="#70896a" opacity=".18" stroke-width="2"/></g>
+      <g class="body-shape star"><path d="M50 9Q53 8 56 17L66 35L87 39Q98 40 88 50L73 64L76 84Q78 95 67 89L50 80L32 89Q22 95 24 83L27 64L11 49Q3 40 15 38L35 35L44 17Q48 8 50 9Z" stroke="#70896a" stroke-width="2"/></g>
+      <g id="face">
       <ellipse cx="32" cy="61" rx="7" ry="4" fill="#e5b8a9"/>
       <ellipse cx="68" cy="61" rx="7" ry="4" fill="#e5b8a9"/>
       <g stroke="#3d5140" stroke-width="4" stroke-linecap="round">
         <path class="eye eye-left" d="M36 49V54"/>
         <path class="eye eye-right" d="M64 49V54"/>
       </g>
-      <path d="M44 62Q50 68 56 62" fill="none" stroke="#3d5140" stroke-width="2.5" stroke-linecap="round"/>
+      <path class="mouth normal-mouth" d="M44 62Q50 68 56 62" fill="none" stroke="#3d5140" stroke-width="2.5" stroke-linecap="round"/>
+      <path class="mouth happy-mouth" d="M43 62Q50 71 57 62" fill="none" stroke="#3d5140" stroke-width="3" stroke-linecap="round"/>
+      <path class="happy-eyes" d="M31 53Q36 46 41 53M59 53Q64 46 69 53" fill="none" stroke="#3d5140" stroke-width="3" stroke-linecap="round"/>
+      <ellipse class="mouth sleepy-mouth" cx="50" cy="65" rx="3" ry="4" fill="#3d5140"/>
+      </g></g>
+      <g class="sleep-marks" fill="#70896a" font-size="12" font-family="sans-serif"><text x="76" y="26">z</text><text x="85" y="16" font-size="9">z</text></g>
+      <g class="confetti" stroke-width="3" stroke-linecap="round"><path d="M12 23L16 28" stroke="#c58c70"/><path d="M85 23L81 28" stroke="#9582b4"/><path d="M8 50L13 49" stroke="#c5aa70"/><path d="M88 49L93 50" stroke="#789568"/><path d="M29 10L31 16" stroke="#67989f"/><path d="M70 10L68 16" stroke="#c58c70"/></g>
     </svg>
   </button>
   <div class="resize-edge top" data-edge="top" role="slider" tabindex="0" aria-label="Buddy size. Drag up or down, or use arrow keys. Double-click to reset." aria-valuemin="64" aria-valuemax="160" aria-valuenow="68" title="Drag up or down to resize · double-click for default size"></div>

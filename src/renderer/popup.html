@@ -6,18 +6,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Your day · Habit Buddy</title>
   <link rel="stylesheet" href="popup.css">
-  <script defer src="popup.js"></script>
+  <script defer src="domain.js"></script><script defer src="theme.js"></script><script defer src="popup.js"></script>
 </head>
 <body>
-  <header><span class="wordmark">HABIT BUDDY</span><button id="close" aria-label="Close popup">×</button></header>
+  <header><span class="wordmark">HABIT BUDDY</span><div class="header-actions">
+    <button id="back-home" class="icon" aria-label="Back to your habits" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6M8 12h12"/></svg></button>
+    <button id="settings-toggle" class="icon" aria-label="Settings" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 3-.6 2.1-2 .9-2-.6-2.4 4.2 1.5 1.5v2l-1.5 1.5L5 18.8l2-.6 2 .9.6 2.1h5l.6-2.1 2-.9 2 .6 2.4-4.2-1.5-1.5v-2l1.5-1.5L19 5.4l-2 .6-2-.9-.6-2.1Z"/><circle cx="12" cy="12" r="3.2"/></svg></button>
+    <button id="close" class="icon" aria-label="Close popup"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+  </div></header>
   <main>
-    <p id="date" class="date"></p>
-    <h1>A little space for you.</h1>
-    <div class="empty-mark" aria-hidden="true">✦</div>
-    <h2>One small thing at a time.</h2>
-    <p>Your habits will feel at home here.</p>
-    <p class="build-note">Adding habits comes in the next step.</p>
+    <p id="date" class="muted date" data-home></p><h1 data-home>A little space for you.</h1>
+    <details id="history" class="history" data-home><summary><span class="history-heading">Little steps add up <svg class="tiny-heart" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 17 3 10C-1 5 5 0 10 5c5-5 11 0 7 5Z"/></svg></span><span id="month-caption" class="muted small"></span><svg class="history-chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"/></svg></summary>
+      <div class="history-content"><div class="section-heading"><h2 id="calendar-title"></h2><button id="calendar-toggle" class="text-button" type="button">See whole year</button></div>
+      <p id="streak-caption" class="muted small"></p><div id="calendar-weekdays" class="weekdays" aria-hidden="true"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+      <div id="heatmap-scroll"><div id="year-months" hidden></div><div id="heatmap" role="group" aria-label="This month's habit progress"></div></div>
+      <div class="legend muted small"><span>Every little bit counts.</span><span>Less <i data-level="0"></i><i data-level="1"></i><i data-level="2"></i><i data-level="3"></i><i data-level="4"></i> More</span></div></div>
+    </details>
+    <section id="settings" hidden aria-label="Settings">
+      <h1>Make yourself at home.</h1><p class="muted">A little color. A little company.</p>
+      <label>Your buddy<select id="avatar-choice"><option value="plant">Little sprout</option><option value="pineapple">Pineapple</option><option value="star">Star</option></select></label>
+      <label>Palette<select id="palette"><option value="sage">Sage</option><option value="lavender">Lavender</option><option value="peach">Peach</option><option value="ocean">Ocean</option></select></label>
+      <div class="color-row"><label>Custom accent <input id="accent" type="color" value="#789568"></label><button id="reset-accent" class="text-button">Use palette</button></div>
+      <button id="settings-done" class="primary view-done" type="button">Back to my habits</button>
+    </section>
+    <section id="today" data-home>
+      <div id="empty"><div class="empty-mark" aria-hidden="true">✦</div><h2>One small thing at a time.</h2><p class="muted">Choose something that feels good for you.</p><button id="first-habit" class="primary">Add your first habit</button></div>
+      <div id="habit-section" hidden><div class="section-heading"><h2 id="pending-title">Habits</h2><button id="add-habit" class="text-button">+ Add habit</button></div><div id="habit-list"></div></div>
+    </section>
+    <section id="editor" hidden>
+      <h2 id="form-title">A small new habit</h2>
+      <form id="habit-form">
+        <label>What would you like to do?<input id="habit-name" maxlength="80" required placeholder="e.g. Drink water" autocomplete="off"></label>
+        <fieldset class="type-fieldset"><legend>What should logging look like?</legend><input id="habit-type" type="hidden" value="count">
+          <div class="type-options">
+            <button type="button" data-type="count" aria-pressed="true"><strong>Count things</strong><small>Water, pages, stretches</small></button>
+            <button type="button" data-type="checkbox" aria-pressed="false"><strong>Just check it off</strong><small>One thing, once a day</small></button>
+            <button type="button" data-type="minutes" aria-pressed="false"><strong>Spend some time</strong><small>Walking, reading, rest</small></button>
+          </div>
+        </fieldset>
+        <div id="goal-fields"><label id="goal-label" for="habit-goal">How many each day?</label><div class="goal-row"><input id="habit-goal" type="number" min="0.1" max="100000" step="any" value="8" required aria-describedby="goal-help"><input id="habit-unit" maxlength="24" placeholder="glasses, pages, times…" aria-label="What are you counting?"><span id="goal-unit" hidden></span></div><p id="goal-help" class="muted small">For example, 8 glasses of water. Each +1 logs one glass.</p></div>
+        <div id="habit-preview" class="habit-preview" aria-live="polite"></div>
+        <fieldset class="reminders"><legend>Gentle reminders <span class="muted small">(optional)</span></legend>
+          <select id="reminder-mode" aria-label="Reminder frequency"><option value="off">No reminders</option><option value="daily">Once a day</option><option value="repeat">Throughout the day</option></select>
+          <div id="reminder-controls" hidden><span id="reminder-time-label" class="clock-label">At</span><div id="reminder-clock" class="alarm-clock" role="group" aria-label="Reminder time"><input id="reminder-time" type="hidden" value="09:00"></div><div id="repeat-controls" hidden><label>Every<select id="reminder-frequency"><option value="30">30 minutes</option><option value="60">1 hour</option><option value="120" selected>2 hours</option><option value="180">3 hours</option><option value="240">4 hours</option></select></label><span class="clock-label">Until</span><div id="until-clock" class="alarm-clock" role="group" aria-label="Reminders end at"><input id="reminder-until" type="hidden" value="20:00"></div></div><p class="muted small">While your buddy is running. It stays quiet once you're done.</p></div>
+        </fieldset>
+        <p id="edit-note" class="muted small" hidden>Changing the tracking type starts today's progress fresh. Past days stay as they were.</p>
+        <div class="form-actions"><button type="submit" class="primary">Save habit</button><button id="cancel-edit" type="button">Cancel</button><button id="remove-habit" class="text-button" type="button" hidden>Remove habit</button></div>
+      </form>
+    </section>
   </main>
-  <footer><span class="dot"></span><span id="status" role="status">Getting cozy…</span></footer>
+  <footer><span class="status-dot" aria-hidden="true"></span><span id="status" role="status">Just on this device. Just for you.</span></footer>
 </body>
 </html>
