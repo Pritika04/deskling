@@ -1,0 +1,131 @@
+# Habit Buddy: Project Spec
+
+A tiny, minimalist desktop habit tracker. It lives as a small animated avatar in the corner of the screen. The user never has to "open an app" to stay on track. It reminds them gently, reacts to progress, and rewards them at the end of the day.
+
+Originally conceived for a friend who isn't feeling his best and needs gentle help remembering to eat, drink water, rest, and so on. The tone throughout should be **warm, soft, and never guilt-inducing.**
+
+## Platforms
+
+- **Windows and macOS** (both required for v1)
+- Developed on Windows. The Mac build is produced by GitHub Actions, so the developer doesn't need a Mac.
+- Linux is out of scope.
+
+## Tech stack
+
+- **Electron**, plain HTML/CSS/JS or a light framework (keep it small)
+- All data stored **locally** (JSON file in the app's user-data directory). No accounts, no server, no network calls.
+- Must work fully offline.
+- No voice and no AI/API calls in v1 (see "Future" below).
+
+## Core principles
+
+1. **Minimal.** It should never feel like a to-do list sitting in your face.
+2. **Zero setup friction.** Installs with one terminal command, launches at login, and just runs.
+3. **No presets.** The user creates every habit themselves. The first launch is an empty state.
+4. **One-tap logging.** No typing needed to log progress.
+5. **Gentle by design.** No red, no "you failed" messaging, and a missed day never feels punishing.
+6. **Private.** Habit data never leaves the machine.
+
+## Features (v1)
+
+### 1. Floating avatar
+- A small, transparent, frameless, always-on-top window, no taskbar or dock presence.
+- Default position: **bottom-left** of the primary display, placed using the screen's *work area* so it sits above the Windows taskbar or macOS dock.
+- Draggable to any position, with the position remembered.
+- Click to open or close the popup window.
+- Tray icon (Windows system tray and macOS menu bar) with: Open, Pause reminders, Launch at login (toggle), Quit.
+
+### 2. Avatars
+- Choices: **cat, pineapple, star, plant** (more can be added later).
+- Drawn as **SVG animated with CSS**, original artwork with no external licensing.
+- All avatars share one **face rig** (eyes, mouth, cheeks) so each reaction is built once and works on every avatar.
+- The plant avatar may optionally have growth stages tied to daily progress (seed, sprout, sapling, tree, tree with fruit).
+
+### 3. Avatar reactions
+| State | Trigger |
+|---|---|
+| Idle | Slow blinks, occasional glance around |
+| Smile | Progress logged |
+| Laugh + confetti | A habit completed |
+| Wink | Streak milestone |
+| Sleepy | Late at night, or an untouched day |
+| Mystery box | All habits done for the day |
+
+### 4. Popup window
+- Small and calm. Shows today's habits, today's progress, the streak, and the heat map.
+- A gear icon for settings (palette, avatar choice, reminders), hidden by default.
+
+### 5. Habits
+- **Empty state on first launch:** a friendly message and one big "Add your first habit" button.
+- Creating a habit: name, type, goal, optional reminder times.
+- Habit types:
+  - **Count / progress bar** (e.g. water: 3 of 8 bottles), with a +1 button
+  - **Checkbox** (e.g. eat 2 oranges, or meditate yes/no)
+  - **Minutes** (e.g. meditate 15 min)
+  - **Percent**
+- Add, edit, and remove habits at any time.
+- Removing a habit keeps its past history in the heat map.
+
+### 6. Reminders
+- Native OS notifications (cute wording, with emoji).
+- Per habit, either at fixed times (e.g. 11:00) or repeating (e.g. every 2 hours between set hours).
+- Global "Pause reminders" option.
+- Never notify for a habit that is already complete for the day.
+
+### 7. Streak and heat map
+- GitHub-style contribution heat map, themed by the palette.
+- Intensity is based on the **fraction of habits completed that day**: any progress gives a light shade, and all habits gives the darkest.
+- Current streak and best streak shown. A day counts toward the streak if the user completed all habits.
+- Be forgiving: wording should be encouraging, and a broken streak should never be displayed harshly.
+
+### 8. Mystery box
+- When all habits are complete, the avatar transforms into a gift/mystery box.
+- Click to reveal content, then show a "see you tomorrow" message and the streak.
+- **Varied content**, bundled with the app and working offline: motivational quotes, gentle jokes, fun facts, "see you tomorrow" notes, and small challenges.
+- Don't repeat the same content type two days in a row, and avoid repeating the same item until the pool is exhausted.
+- Content should live in a simple data file (e.g. `content/mystery.json`) that is easy to extend.
+
+### 9. Themes
+- A few ready-made palettes plus a custom accent color picker.
+- The heat map, progress bars, avatar tint, and buttons all follow the palette (use CSS variables so one change restyles everything).
+
+### 10. Install and launch
+- **Launch at login** on both platforms, enabled by default but toggleable.
+- One-line install per OS, pulling the right build from GitHub Releases:
+  - macOS: a `curl ... | sh` script (or Homebrew cask later)
+  - Windows: a PowerShell one-liner (or winget later)
+- Builds produced by **GitHub Actions** on tagged releases (Windows + macOS artifacts).
+- Code signing is out of scope for now. Terminal-based install avoids most Gatekeeper and SmartScreen friction.
+
+## Architecture notes
+
+- **Single entry point for logging:** every way of recording progress calls one function, `logProgress(habitId, amount)`. Buttons call it now, and voice or anything else can call it later. Avatar reactions, confetti, streak updates, and the mystery-box check all hang off this function.
+- Keep **state, storage, and UI separate** (a small store module with load/save, plus pure functions for streak and heat-map calculations that are easy to test).
+- Day boundary: define "today" using local time. Consider letting the day roll over at a configurable hour (e.g. 4 AM) so late-night logging counts toward the right day.
+- Reminder scheduling lives in the main process and should survive restarts.
+
+## Suggested build order
+
+1. Electron scaffold: transparent floating avatar window plus popup window, tray icon
+2. Data store and `logProgress`
+3. Add-habit flow and habit list with the four habit types
+4. Avatar SVGs, face rig, and reactions
+5. Heat map, streak, and theming
+6. Reminders (native notifications)
+7. Mystery box and content pool
+8. Launch at login, install scripts, GitHub Actions release builds
+
+## Out of scope for v1 (future ideas)
+
+- **Voice logging** via hotkey ("I ate 2 oranges"), with local speech-to-text and a small AI step to match the sentence to a habit. This is deferred, and the `logProgress` design keeps it easy to add.
+- **Phone notifications** (e.g. via ntfy or Telegram)
+- **Smart reminders** that only nudge when behind pace
+- **Rough-day mode** and grace days for streaks
+- **Friend mode**, where a trusted person sees a summary and can send notes into the mystery box
+- Auto-update, code signing, Linux support
+
+## Tone guide
+
+- Friendly, soft, a little playful. Short messages.
+- Celebrate small wins. Never shame.
+- Notifications should feel like a friendly nudge, e.g. "Time for some water 💧", not "You missed your goal."
