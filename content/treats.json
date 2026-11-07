@@ -1,0 +1,810 @@
+{
+  "foods": [
+    {
+      "id": "strawberry",
+      "name": "strawberry",
+      "emoji": "🍓",
+      "kind": "fruit"
+    },
+    {
+      "id": "cherry",
+      "name": "cherry",
+      "emoji": "🍒",
+      "kind": "fruit"
+    },
+    {
+      "id": "peach",
+      "name": "peach",
+      "emoji": "🍑",
+      "kind": "fruit"
+    },
+    {
+      "id": "pear",
+      "name": "pear",
+      "emoji": "🍐",
+      "kind": "fruit"
+    },
+    {
+      "id": "apple",
+      "name": "apple",
+      "emoji": "🍎",
+      "kind": "fruit"
+    },
+    {
+      "id": "green-apple",
+      "name": "green apple",
+      "emoji": "🍏",
+      "kind": "fruit"
+    },
+    {
+      "id": "banana",
+      "name": "banana",
+      "emoji": "🍌",
+      "kind": "fruit"
+    },
+    {
+      "id": "orange",
+      "name": "orange",
+      "emoji": "🍊",
+      "kind": "fruit"
+    },
+    {
+      "id": "mandarin",
+      "name": "mandarin",
+      "emoji": "🍊",
+      "kind": "fruit"
+    },
+    {
+      "id": "lemon",
+      "name": "lemon",
+      "emoji": "🍋",
+      "kind": "fruit"
+    },
+    {
+      "id": "lime",
+      "name": "lime",
+      "emoji": "🍋‍🟩",
+      "kind": "fruit"
+    },
+    {
+      "id": "watermelon",
+      "name": "watermelon",
+      "emoji": "🍉",
+      "kind": "fruit"
+    },
+    {
+      "id": "melon",
+      "name": "melon",
+      "emoji": "🍈",
+      "kind": "fruit"
+    },
+    {
+      "id": "grapes",
+      "name": "grapes",
+      "emoji": "🍇",
+      "kind": "fruit"
+    },
+    {
+      "id": "blueberries",
+      "name": "blueberries",
+      "emoji": "🫐",
+      "kind": "fruit"
+    },
+    {
+      "id": "mango",
+      "name": "mango",
+      "emoji": "🥭",
+      "kind": "fruit"
+    },
+    {
+      "id": "pineapple",
+      "name": "pineapple",
+      "emoji": "🍍",
+      "kind": "fruit"
+    },
+    {
+      "id": "kiwi",
+      "name": "kiwi",
+      "emoji": "🥝",
+      "kind": "fruit"
+    },
+    {
+      "id": "coconut",
+      "name": "coconut",
+      "emoji": "🥥",
+      "kind": "fruit"
+    },
+    {
+      "id": "carrot",
+      "name": "carrot",
+      "emoji": "🥕",
+      "kind": "garden"
+    },
+    {
+      "id": "sweetcorn",
+      "name": "sweetcorn",
+      "emoji": "🌽",
+      "kind": "garden"
+    },
+    {
+      "id": "cucumber",
+      "name": "cucumber",
+      "emoji": "🥒",
+      "kind": "garden"
+    },
+    {
+      "id": "broccoli",
+      "name": "broccoli",
+      "emoji": "🥦",
+      "kind": "garden"
+    },
+    {
+      "id": "tomato",
+      "name": "tomato",
+      "emoji": "🍅",
+      "kind": "garden"
+    },
+    {
+      "id": "cherry-tomatoes",
+      "name": "cherry tomatoes",
+      "emoji": "🍅",
+      "kind": "garden"
+    },
+    {
+      "id": "avocado",
+      "name": "avocado",
+      "emoji": "🥑",
+      "kind": "garden"
+    },
+    {
+      "id": "sweet-potato",
+      "name": "sweet potato",
+      "emoji": "🍠",
+      "kind": "garden"
+    },
+    {
+      "id": "bell-pepper",
+      "name": "bell pepper",
+      "emoji": "🫑",
+      "kind": "garden"
+    },
+    {
+      "id": "peas",
+      "name": "peas",
+      "emoji": "🫛",
+      "kind": "garden"
+    },
+    {
+      "id": "edamame",
+      "name": "edamame",
+      "emoji": "🫛",
+      "kind": "garden"
+    },
+    {
+      "id": "garden-salad",
+      "name": "garden salad",
+      "emoji": "🥗",
+      "kind": "garden"
+    },
+    {
+      "id": "croissant",
+      "name": "croissant",
+      "emoji": "🥐",
+      "kind": "bakery"
+    },
+    {
+      "id": "bagel",
+      "name": "bagel",
+      "emoji": "🥯",
+      "kind": "bakery"
+    },
+    {
+      "id": "pretzel",
+      "name": "pretzel",
+      "emoji": "🥨",
+      "kind": "bakery"
+    },
+    {
+      "id": "bread-roll",
+      "name": "bread roll",
+      "emoji": "🍞",
+      "kind": "bakery"
+    },
+    {
+      "id": "sourdough-toast",
+      "name": "sourdough toast",
+      "emoji": "🍞",
+      "kind": "bakery"
+    },
+    {
+      "id": "buttered-toast",
+      "name": "buttered toast",
+      "emoji": "🍞",
+      "kind": "bakery"
+    },
+    {
+      "id": "honey-toast",
+      "name": "honey toast",
+      "emoji": "🍞",
+      "kind": "bakery"
+    },
+    {
+      "id": "cheese-toast",
+      "name": "cheese toast",
+      "emoji": "🧀",
+      "kind": "bakery"
+    },
+    {
+      "id": "flatbread",
+      "name": "flatbread",
+      "emoji": "🫓",
+      "kind": "bakery"
+    },
+    {
+      "id": "pita-bread",
+      "name": "pita bread",
+      "emoji": "🫓",
+      "kind": "bakery"
+    },
+    {
+      "id": "baguette",
+      "name": "baguette",
+      "emoji": "🥖",
+      "kind": "bakery"
+    },
+    {
+      "id": "pancakes",
+      "name": "pancakes",
+      "emoji": "🥞",
+      "kind": "bakery"
+    },
+    {
+      "id": "waffle",
+      "name": "waffle",
+      "emoji": "🧇",
+      "kind": "bakery"
+    },
+    {
+      "id": "crumpet",
+      "name": "crumpet",
+      "emoji": "🥞",
+      "kind": "bakery"
+    },
+    {
+      "id": "chocolate-chip-cookie",
+      "name": "chocolate chip cookie",
+      "emoji": "🍪",
+      "kind": "sweet"
+    },
+    {
+      "id": "oatmeal-cookie",
+      "name": "oatmeal cookie",
+      "emoji": "🍪",
+      "kind": "sweet"
+    },
+    {
+      "id": "ginger-cookie",
+      "name": "ginger cookie",
+      "emoji": "🍪",
+      "kind": "sweet"
+    },
+    {
+      "id": "shortbread",
+      "name": "shortbread",
+      "emoji": "🍪",
+      "kind": "sweet"
+    },
+    {
+      "id": "brownie",
+      "name": "brownie",
+      "emoji": "🍫",
+      "kind": "sweet"
+    },
+    {
+      "id": "chocolate-truffle",
+      "name": "chocolate truffle",
+      "emoji": "🍫",
+      "kind": "sweet"
+    },
+    {
+      "id": "dark-chocolate",
+      "name": "dark chocolate",
+      "emoji": "🍫",
+      "kind": "sweet"
+    },
+    {
+      "id": "milk-chocolate",
+      "name": "milk chocolate",
+      "emoji": "🍫",
+      "kind": "sweet"
+    },
+    {
+      "id": "cupcake",
+      "name": "cupcake",
+      "emoji": "🧁",
+      "kind": "sweet"
+    },
+    {
+      "id": "strawberry-cupcake",
+      "name": "strawberry cupcake",
+      "emoji": "🧁",
+      "kind": "sweet"
+    },
+    {
+      "id": "lemon-cupcake",
+      "name": "lemon cupcake",
+      "emoji": "🧁",
+      "kind": "sweet"
+    },
+    {
+      "id": "birthday-cake",
+      "name": "birthday cake",
+      "emoji": "🍰",
+      "kind": "sweet"
+    },
+    {
+      "id": "cheesecake",
+      "name": "cheesecake",
+      "emoji": "🍰",
+      "kind": "sweet"
+    },
+    {
+      "id": "carrot-cake",
+      "name": "carrot cake",
+      "emoji": "🍰",
+      "kind": "sweet"
+    },
+    {
+      "id": "chocolate-cake",
+      "name": "chocolate cake",
+      "emoji": "🍰",
+      "kind": "sweet"
+    },
+    {
+      "id": "doughnut",
+      "name": "doughnut",
+      "emoji": "🍩",
+      "kind": "sweet"
+    },
+    {
+      "id": "cinnamon-doughnut",
+      "name": "cinnamon doughnut",
+      "emoji": "🍩",
+      "kind": "sweet"
+    },
+    {
+      "id": "pink-doughnut",
+      "name": "pink doughnut",
+      "emoji": "🍩",
+      "kind": "sweet"
+    },
+    {
+      "id": "ice-cream",
+      "name": "ice cream",
+      "emoji": "🍦",
+      "kind": "dessert"
+    },
+    {
+      "id": "strawberry-ice-cream",
+      "name": "strawberry ice cream",
+      "emoji": "🍨",
+      "kind": "dessert"
+    },
+    {
+      "id": "mint-ice-cream",
+      "name": "mint ice cream",
+      "emoji": "🍨",
+      "kind": "dessert"
+    },
+    {
+      "id": "mango-sorbet",
+      "name": "mango sorbet",
+      "emoji": "🍨",
+      "kind": "dessert"
+    },
+    {
+      "id": "shaved-ice",
+      "name": "shaved ice",
+      "emoji": "🍧",
+      "kind": "dessert"
+    },
+    {
+      "id": "pudding",
+      "name": "pudding",
+      "emoji": "🍮",
+      "kind": "dessert"
+    },
+    {
+      "id": "caramel-custard",
+      "name": "caramel custard",
+      "emoji": "🍮",
+      "kind": "dessert"
+    },
+    {
+      "id": "apple-pie",
+      "name": "apple pie",
+      "emoji": "🥧",
+      "kind": "dessert"
+    },
+    {
+      "id": "cherry-pie",
+      "name": "cherry pie",
+      "emoji": "🥧",
+      "kind": "dessert"
+    },
+    {
+      "id": "pumpkin-pie",
+      "name": "pumpkin pie",
+      "emoji": "🥧",
+      "kind": "dessert"
+    },
+    {
+      "id": "mochi",
+      "name": "mochi",
+      "emoji": "🍡",
+      "kind": "dessert"
+    },
+    {
+      "id": "dango",
+      "name": "dango",
+      "emoji": "🍡",
+      "kind": "dessert"
+    },
+    {
+      "id": "candy",
+      "name": "candy",
+      "emoji": "🍬",
+      "kind": "dessert"
+    },
+    {
+      "id": "lollipop",
+      "name": "lollipop",
+      "emoji": "🍭",
+      "kind": "dessert"
+    },
+    {
+      "id": "honey",
+      "name": "honey",
+      "emoji": "🍯",
+      "kind": "dessert"
+    },
+    {
+      "id": "pizza-slice",
+      "name": "pizza slice",
+      "emoji": "🍕",
+      "kind": "savory"
+    },
+    {
+      "id": "mushroom-pizza",
+      "name": "mushroom pizza",
+      "emoji": "🍕",
+      "kind": "savory"
+    },
+    {
+      "id": "veggie-burger",
+      "name": "veggie burger",
+      "emoji": "🍔",
+      "kind": "savory"
+    },
+    {
+      "id": "mini-burger",
+      "name": "mini burger",
+      "emoji": "🍔",
+      "kind": "savory"
+    },
+    {
+      "id": "sandwich",
+      "name": "sandwich",
+      "emoji": "🥪",
+      "kind": "savory"
+    },
+    {
+      "id": "grilled-cheese",
+      "name": "grilled cheese",
+      "emoji": "🥪",
+      "kind": "savory"
+    },
+    {
+      "id": "falafel",
+      "name": "falafel",
+      "emoji": "🧆",
+      "kind": "savory"
+    },
+    {
+      "id": "taco",
+      "name": "taco",
+      "emoji": "🌮",
+      "kind": "savory"
+    },
+    {
+      "id": "burrito",
+      "name": "burrito",
+      "emoji": "🌯",
+      "kind": "savory"
+    },
+    {
+      "id": "stuffed-flatbread",
+      "name": "stuffed flatbread",
+      "emoji": "🥙",
+      "kind": "savory"
+    },
+    {
+      "id": "dumpling",
+      "name": "dumpling",
+      "emoji": "🥟",
+      "kind": "savory"
+    },
+    {
+      "id": "veggie-dumpling",
+      "name": "veggie dumpling",
+      "emoji": "🥟",
+      "kind": "savory"
+    },
+    {
+      "id": "bao-bun",
+      "name": "bao bun",
+      "emoji": "🥟",
+      "kind": "savory"
+    },
+    {
+      "id": "empanada",
+      "name": "empanada",
+      "emoji": "🥟",
+      "kind": "savory"
+    },
+    {
+      "id": "samosa",
+      "name": "samosa",
+      "emoji": "🥟",
+      "kind": "savory"
+    },
+    {
+      "id": "spring-roll",
+      "name": "spring roll",
+      "emoji": "🌯",
+      "kind": "savory"
+    },
+    {
+      "id": "noodle-bowl",
+      "name": "noodle bowl",
+      "emoji": "🍜",
+      "kind": "cozy"
+    },
+    {
+      "id": "udon-noodles",
+      "name": "udon noodles",
+      "emoji": "🍜",
+      "kind": "cozy"
+    },
+    {
+      "id": "ramen",
+      "name": "ramen",
+      "emoji": "🍜",
+      "kind": "cozy"
+    },
+    {
+      "id": "spaghetti",
+      "name": "spaghetti",
+      "emoji": "🍝",
+      "kind": "cozy"
+    },
+    {
+      "id": "pesto-pasta",
+      "name": "pesto pasta",
+      "emoji": "🍝",
+      "kind": "cozy"
+    },
+    {
+      "id": "mac-and-cheese",
+      "name": "mac and cheese",
+      "emoji": "🍝",
+      "kind": "cozy"
+    },
+    {
+      "id": "rice-ball",
+      "name": "rice ball",
+      "emoji": "🍙",
+      "kind": "cozy"
+    },
+    {
+      "id": "rice-cracker",
+      "name": "rice cracker",
+      "emoji": "🍘",
+      "kind": "cozy"
+    },
+    {
+      "id": "rice-bowl",
+      "name": "rice bowl",
+      "emoji": "🍚",
+      "kind": "cozy"
+    },
+    {
+      "id": "curry-rice",
+      "name": "curry rice",
+      "emoji": "🍛",
+      "kind": "cozy"
+    },
+    {
+      "id": "veggie-curry",
+      "name": "veggie curry",
+      "emoji": "🍛",
+      "kind": "cozy"
+    },
+    {
+      "id": "bento-box",
+      "name": "bento box",
+      "emoji": "🍱",
+      "kind": "cozy"
+    },
+    {
+      "id": "sushi-roll",
+      "name": "sushi roll",
+      "emoji": "🍣",
+      "kind": "cozy"
+    },
+    {
+      "id": "veggie-sushi",
+      "name": "veggie sushi",
+      "emoji": "🍣",
+      "kind": "cozy"
+    },
+    {
+      "id": "soup",
+      "name": "soup",
+      "emoji": "🍲",
+      "kind": "cozy"
+    },
+    {
+      "id": "tomato-soup",
+      "name": "tomato soup",
+      "emoji": "🥣",
+      "kind": "cozy"
+    },
+    {
+      "id": "pumpkin-soup",
+      "name": "pumpkin soup",
+      "emoji": "🥣",
+      "kind": "cozy"
+    },
+    {
+      "id": "oatmeal",
+      "name": "oatmeal",
+      "emoji": "🥣",
+      "kind": "cozy"
+    },
+    {
+      "id": "popcorn",
+      "name": "popcorn",
+      "emoji": "🍿",
+      "kind": "snack"
+    },
+    {
+      "id": "roasted-peanuts",
+      "name": "roasted peanuts",
+      "emoji": "🥜",
+      "kind": "snack"
+    },
+    {
+      "id": "chestnuts",
+      "name": "chestnuts",
+      "emoji": "🌰",
+      "kind": "snack"
+    },
+    {
+      "id": "trail-mix",
+      "name": "trail mix",
+      "emoji": "🥜",
+      "kind": "snack"
+    },
+    {
+      "id": "cheese-cube",
+      "name": "cheese cube",
+      "emoji": "🧀",
+      "kind": "snack"
+    },
+    {
+      "id": "fries",
+      "name": "fries",
+      "emoji": "🍟",
+      "kind": "snack"
+    },
+    {
+      "id": "baked-potato",
+      "name": "baked potato",
+      "emoji": "🥔",
+      "kind": "snack"
+    },
+    {
+      "id": "hash-brown",
+      "name": "hash brown",
+      "emoji": "🥔",
+      "kind": "snack"
+    },
+    {
+      "id": "soft-boiled-egg",
+      "name": "soft-boiled egg",
+      "emoji": "🥚",
+      "kind": "snack"
+    },
+    {
+      "id": "omelette",
+      "name": "omelette",
+      "emoji": "🍳",
+      "kind": "snack"
+    },
+    {
+      "id": "fruit-bowl",
+      "name": "fruit bowl",
+      "emoji": "🥗",
+      "kind": "snack"
+    },
+    {
+      "id": "strawberry-jam-toast",
+      "name": "strawberry jam toast",
+      "emoji": "🍞",
+      "kind": "snack"
+    }
+  ],
+  "messages": [
+    "Mmm. Tiny snack, enormous happiness.",
+    "One happy nibble at a time.",
+    "Excuse me, I have very important munching to do.",
+    "A snack break with my favorite human.",
+    "My compliments to the tiny chef.",
+    "If I had pockets, I would save a little for later.",
+    "This calls for a very small happy dance.",
+    "You made progress. I made crumbs.",
+    "Please allow a moment for happy chewing.",
+    "Snack review: would nibble again.",
+    "Well, that hit the tiny spot.",
+    "I was going to share. Then I took a bite.",
+    "A little bite of lovely.",
+    "My whole afternoon just got tastier.",
+    "Tiny paws. Excellent taste.",
+    "Oh! A snack-sized plot twist.",
+    "Consider my little day made.",
+    "I am having a very good munch.",
+    "That is one cozy little mouthful.",
+    "You keep going. I will handle the crumbs.",
+    "Good things come in tiny bites.",
+    "A small feast for a small friend.",
+    "I have no notes. Only crumbs.",
+    "Snack acquired. Joy levels: very high.",
+    "This might be my new favorite. Ask me again tomorrow.",
+    "I will be thinking about this bite for a while.",
+    "Little treat, big happy wiggle.",
+    "Munching is my current full-time occupation.",
+    "A very tasty turn of events.",
+    "Hold that thought. Still chewing.",
+    "I give this five tiny stars.",
+    "My snack radar was right!",
+    "This is the good kind of busy.",
+    "A bite, a wiggle, a very happy buddy.",
+    "I saved you a crumb. A very small crumb.",
+    "What a lovely little pit stop.",
+    "My tiny tummy approves.",
+    "That was a delicious little surprise.",
+    "You bring the progress. I bring the happy munching.",
+    "Just a buddy, enjoying the little things.",
+    "Today is looking rather tasty.",
+    "Slow nibbles. Big appreciation.",
+    "Crumbs happen. Happiness too.",
+    "I may need a tiny napkin.",
+    "A splendid day to be a little buddy.",
+    "Somebody pinch me. Actually, pass a napkin.",
+    "My cheeks are doing their happy thing.",
+    "That bite deserves a little glow.",
+    "Oh, {food}! Excellent choice.",
+    "Today on the tiny menu: {food}.",
+    "{Food}? Now you have my full attention.",
+    "Just me and my {food}. A beautiful friendship.",
+    "Making a little room for {food}.",
+    "{Food} makes a lovely little celebration.",
+    "A little {food} moment. Very important.",
+    "Currently daydreaming about my next bite of {food}.",
+    "{Food}: small serving, very big fan.",
+    "My official review of {food}: mmm.",
+    "I could get used to this {food} situation.",
+    "Nothing urgent. Just enjoying my {food}."
+  ]
+}

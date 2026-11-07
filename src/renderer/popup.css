@@ -210,9 +210,6 @@ footer { display: flex; flex-shrink: 0; align-items: center; justify-content: ce
 .accessory-art svg { width: 100%; height: 100%; }
 .nothing-art { height: 63px; display: grid; place-items: center; font: 28px Georgia, serif; color: var(--muted); }
 .wardrobe-empty { grid-column: 1 / -1; font-size: 11px; text-align: center; padding: 12px; }
-.coin-guide { margin-top: 20px; font-size: 11px; color: var(--muted); }
-.coin-guide summary { cursor: pointer; color: var(--ink); }
-.coin-guide p { margin: 10px 0; line-height: 1.8; }
 .reward-coins { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; color: var(--accent); margin: 14px 0 0; }
 #reward:not([hidden]) { animation: reward-arrive .45s ease-out; }
 @keyframes reward-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }

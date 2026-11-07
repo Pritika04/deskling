@@ -9,8 +9,10 @@ const { startReminders } = require('./reminders');
 const { formatSurprise } = require('./mystery');
 const { startThoughts } = require('./thoughts');
 const { runShopSmoke } = require('./smoke-shop');
-const { RestClock, REST_AFTER } = require('./rest');
+const { RestClock, restAfterFor } = require('./rest');
 const { nearbyGaze } = require('./gaze');
+const { WelcomeManager } = require('./welcome');
+const { TreatQueue, TreatPicker } = require('./treats');
 const { popupPosition, bubbleWithMenu, mouthPoint } = require('./popup-position');
 const { chooseGreeting, giftSize, chooseEncouragement, encouragements } = require('./greetings');
 
@@ -35,7 +37,19 @@ let gazeTrackingEnabled = false;
 let lastGaze = null;
 let celebrating = false;
 let restClock;
+let computerActivityTimer;
 let lastActivityPointer;
+let welcomeManager;
+let activeWelcome = null;
+let welcomeTimer;
+let welcomeRetryTimer;
+let welcomeReady = false;
+const treatQueue = new TreatQueue();
+const treatPicker = new TreatPicker();
+let treatTimer;
+let treatPlaying = false;
+let lastTreatMessage = '';
+let reopenAfterTreat = false;
 let effectState = null;
 let celebrationTimer;
 let reopenAfterCelebration = false;
@@ -52,6 +66,97 @@ function updateNearbyGaze() {
   if (lastGaze && gaze.x === lastGaze.x && gaze.y === lastGaze.y) return;
   lastGaze = gaze;
   avatar.webContents.send('avatar:gaze', gaze);
+}
+
+function startWelcomeDance() {
+  if (reducedMotion || rolling || drag || resize) return false;
+  const bounds = avatar.getBounds(), area = screen.getDisplayMatching(bounds).workArea;
+  const left = bounds.x - area.x, right = area.x + area.width - bounds.width - bounds.x;
+  const direction = right >= left ? 1 : -1, distance = Math.min(180, Math.max(left, right));
+  if (distance < bounds.width / 2) return false;
+  const started = Date.now();
+  rolling = { origin: { x: bounds.x, y: bounds.y }, followUp: 'wink', timer: null };
+  avatar.webContents.send('avatar:reaction', { state: 'welcome-dance', duration: 2800 });
+  rolling.timer = setInterval(() => {
+    const fraction = Math.min(1, (Date.now() - started) / 2800);
+    placeAvatar({ x: bounds.x + direction * distance * Math.sin(Math.PI * fraction), y: bounds.y }, bounds.width);
+    if (fraction >= 1) stopRoll(true);
+  }, 16);
+  return true;
+}
+
+function flushWelcome() {
+  if (!welcomeReady || (!activeWelcome && !welcomeManager?.pending) || welcomeManager.away || quitting || hatching || treatPlaying || rolling || drag || resize || celebrating || reopenAfterCelebration || rewardOpen || popup.isVisible() || effectState || !avatar.isVisible() || effects.webContents.isLoading()) return false;
+  try {
+    if (activeWelcome?.phase === 'dance') return false;
+    const item = activeWelcome?.item || welcomeManager.take();
+    if (!item) return false;
+    restClock.touch();
+    const gift = mysteryStatus(store.snapshot()).available;
+    if (!activeWelcome && item.kind === 'daily' && !gift && startWelcomeDance()) {
+      activeWelcome = { item, phase: 'dance' };
+      welcomeTimer = setTimeout(() => { if (activeWelcome) activeWelcome.phase = 'ready'; flushWelcome(); }, 2850);
+      return true;
+    }
+    activeWelcome = null;
+    avatar.webContents.send('avatar:reaction', { state: gift ? 'idle' : reducedMotion ? 'smile' : 'wiggle', duration: 3000 });
+    showEffects('greeting', item.text);
+    return true;
+  } catch (error) { console.error('Could not greet you:', error.message); return false; }
+}
+
+function welcomeBack(kind) {
+  try {
+    welcomeManager.back(kind);
+    if (!welcomeManager.away) restClock.touch();
+    flushWelcome();
+  } catch (error) { console.error('Could not restore buddy welcome:', error.message); }
+}
+
+function welcomeAway(kind) {
+  try { welcomeManager.leave(kind); }
+  catch (error) { console.error('Could not save buddy welcome:', error.message); }
+  clearTimeout(welcomeTimer); activeWelcome = null;
+  cancelTreat(); treatQueue.requested = false;
+  cancelCelebration(); hideEffects(); stopRoll(); popup.hide();
+}
+
+function cancelTreat(sendIdle = true) {
+  clearTimeout(treatTimer);
+  if (!treatPlaying) return;
+  treatPlaying = false;
+  reopenAfterTreat = false;
+  hideEffects();
+  if (sendIdle && avatar && !avatar.isDestroyed()) avatar.webContents.send('avatar:reaction', { state: 'idle' });
+}
+
+function flushTreat(reopen = false) {
+  if (!treatQueue.requested || treatPlaying || quitting || hatching || celebrating || rolling || drag || resize || reopenAfterCelebration || rewardOpen || popup.isVisible() || effectState || activeWelcome || welcomeManager?.away || !store.snapshot().settings.hatched) return false;
+  const snack = treatQueue.take(store.snapshot());
+  if (!snack) return false;
+  treatPlaying = true;
+  reopenAfterTreat = reopen;
+  const { food, message } = treatPicker.next();
+  avatar.webContents.send('avatar:reaction', { state: 'treat', treatSize: snack.size, food, duration: 5000 });
+  lastTreatMessage = message;
+  showEffects('reminder', lastTreatMessage);
+  treatTimer = setTimeout(() => {
+    const restore = reopenAfterTreat;
+    reopenAfterTreat = false;
+    treatPlaying = false;
+    if (!quitting && !avatar.isDestroyed()) avatar.webContents.send('avatar:reaction', { state: 'idle' });
+    if (restore && !quitting) showPopup();
+  }, 5000);
+  return true;
+}
+
+function openBuddy() {
+  if (!popup || !welcomeManager) return;
+  try {
+    welcomeManager.active();
+    if (activeWelcome || welcomeManager.pending) flushWelcome();
+    else showPopup();
+  } catch (error) { console.error('Could not open buddy welcome:', error.message); showPopup(); }
 }
 
 function clampPosition(position, width, height) {
@@ -114,6 +219,7 @@ function previewResize(cursor) {
 
 function showPopup() {
   restClock?.touch();
+  cancelTreat(); treatQueue.requested = false;
   if (!store.snapshot().settings.hatched && !hatching) { hatchBuddy(); return; }
   closeReward(false);
   cancelCelebration();
@@ -180,7 +286,9 @@ function startRoll(celebration = false, followUp = null) {
 }
 
 function reactToProgress(result, random = Math.random) {
-  const reopen = popup.isVisible() || reopenAfterCelebration;
+  const reopen = popup.isVisible() || reopenAfterCelebration || reopenAfterTreat;
+  cancelTreat(false);
+  treatQueue.record(result);
   cancelCelebration();
   hideEffects();
   stopRoll(); celebrating = !!result.completed; broadcast();
@@ -196,7 +304,8 @@ function reactToProgress(result, random = Math.random) {
       const restore = reopenAfterCelebration;
       cancelCelebration(); hideEffects(); stopRoll();
       syncAvatarSize();
-      if (restore && !quitting) showPopup();
+      const snack = !result.allComplete && !quitting && treatQueue.request(store.snapshot()) && flushTreat(restore);
+      if (restore && !quitting && !snack) showPopup();
       else if (!quitting && result.allComplete && mysteryStatus(store.snapshot()).available) {
         avatar.webContents.send('avatar:reaction', { state: 'idle' });
         showEffects('reminder', 'You earned a little surprise. Click to unwrap ✨');
@@ -242,6 +351,8 @@ function showEffects(state, message) {
 }
 
 function showReminder(habit) {
+  if (treatPlaying || treatQueue.requested) return false;
+  if (activeWelcome || welcomeManager?.pending || welcomeManager?.away) return false;
   if (!store.snapshot().settings.hatched) return false;
   if (quitting || rolling || drag || resize || reopenAfterCelebration || popup.isVisible() || effectState || effects.webContents.isLoading()) return false;
   const wording = /water|hydrat/i.test(habit.name) ? 'A little water break? Whenever you feel ready. 💧' : `A little moment for ${habit.name}? Whenever you're ready. 🌱`;
@@ -271,6 +382,7 @@ function closeReward(greet = true) {
   popup.webContents.send('mystery:reveal', null);
   avatar.webContents.send('avatar:reaction', { state: 'idle' });
   if (greet && !quitting) {
+    if (activeWelcome || welcomeManager?.pending) { flushWelcome(); return; }
     const greeting = chooseGreeting(new Date(), lastGreeting);
     lastGreeting = greeting.text;
     showEffects('greeting', greeting.text);
@@ -278,6 +390,8 @@ function closeReward(greet = true) {
 }
 
 function showThought(item, checkOnly = false) {
+  if (treatPlaying || treatQueue.requested) return false;
+  if (activeWelcome || welcomeManager?.pending || welcomeManager?.away) return false;
   if (!store.snapshot().settings.hatched) return false;
   if (quitting || rewardOpen || rolling || drag || resize || reopenAfterCelebration || popup.isVisible() || effectState || effects.webContents.isLoading() || mysteryStatus(store.snapshot()).available) return false;
   if (!checkOnly) {
@@ -307,7 +421,6 @@ function trayMenu() {
       catch (error) { dialog.showErrorBox('Could not save your preference', error.message); }
       trayMenu();
     } },
-    { label: 'Launch at login (coming in step 8)', enabled: false },
     { type: 'separator' },
     { label: 'Quit Habit Buddy', click: () => app.quit() },
   ]));
@@ -369,15 +482,17 @@ function registerIpc() {
   ipcMain.handle('buddy:name', (event, name) => {
     if (!trusted(event)) throw new Error('Unknown window.');
     restClock.touch();
-    const next = store.nameBuddy(name);
+    const firstHello = !store.snapshot().settings.hatched;
+    store.nameBuddy(name);
+    if (firstHello) welcomeManager.firstHello();
     cancelHatching(); broadcast();
-    return next;
+    return store.snapshot();
   });
   ipcMain.handle('avatar:affection', (event, kind) => {
     if (!trusted(event) || event.sender !== avatar.webContents) return false;
     if (!['pet', 'play'].includes(kind)) return false;
     restClock.touch();
-    if (!store.snapshot().settings.hatched || rewardOpen || rolling || drag || resize || reopenAfterCelebration || effects.isVisible() || mysteryStatus(store.snapshot()).available || Date.now() - affectionAt < 2500) return false;
+    if (!store.snapshot().settings.hatched || treatPlaying || treatQueue.requested || rewardOpen || rolling || drag || resize || reopenAfterCelebration || effects.isVisible() || mysteryStatus(store.snapshot()).available || Date.now() - affectionAt < 2500) return false;
     affectionAt = Date.now();
     if (kind === 'play') popup.hide();
     const states = ['boop', 'cuddle', 'wiggle'];
@@ -439,6 +554,7 @@ function registerIpc() {
   ipcMain.handle('avatar:resize', (event, size) => {
     if (!trusted(event)) throw new Error('Unknown window.');
     restClock.touch();
+    cancelTreat();
     stopRoll();
     store.updateSettings({ avatarSize: size });
     syncAvatarSize();
@@ -451,6 +567,7 @@ function registerIpc() {
     if (event.sender !== avatar.webContents) return;
     restClock.touch();
     if (phase === 'start' && ['top', 'bottom'].includes(edge)) {
+      cancelTreat();
       cancelCelebration();
       hideEffects();
       stopRoll();
@@ -479,13 +596,15 @@ function registerIpc() {
     if (rewardOpen) { closeReward(); return; }
     if (event.sender === avatar.webContents && mysteryStatus(store.snapshot()).available) {
       try { openMystery(); } catch (error) { dialog.showErrorBox('Your surprise is safe', error.message); }
-    } else popup.isVisible() ? popup.hide() : showPopup();
+    } else if (popup.isVisible()) { popup.hide(); }
+    else showPopup();
   });
   ipcMain.on('popup:close', event => { if (trusted(event)) { restClock.touch(); cancelHatching(); cancelCelebration(); hideEffects(); stopRoll(); popup.hide(); closeReward(); } });
   ipcMain.on('avatar:drag', (event, phase) => {
     if (event.sender !== avatar.webContents) return;
     restClock.touch();
     if (phase === 'start') {
+      cancelTreat();
       cancelCelebration();
       hideEffects();
       stopRoll();
@@ -514,19 +633,26 @@ function savePosition() {
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => { if (popup) showPopup(); });
-  app.on('before-quit', () => { quitting = true; restClock?.stop(); clearInterval(gazeTimer); clearInterval(presentationTimer); clearTimeout(hatchTimer); cancelCelebration(); hideEffects(); stopRoll(); if (stopReminders) stopReminders(); if (stopThoughts) stopThoughts(); });
+  app.on('second-instance', openBuddy);
+  app.on('before-quit', () => {
+    quitting = true;
+    try { welcomeManager?.recordActive(true, true); } catch (error) { console.error('Could not save last visit:', error.message); }
+    restClock?.stop(); clearTimeout(treatTimer); clearInterval(computerActivityTimer); clearInterval(welcomeRetryTimer); clearTimeout(welcomeTimer); clearInterval(gazeTimer); clearInterval(presentationTimer); clearTimeout(hatchTimer); cancelCelebration(); hideEffects(); stopRoll(); if (stopReminders) stopReminders(); if (stopThoughts) stopThoughts();
+  });
   app.on('window-all-closed', () => {});
-  app.on('activate', () => { if (popup) showPopup(); });
+  app.on('activate', openBuddy);
   app.whenReady().then(async () => {
     app.setAppUserModelId('com.habitbuddy.desktop');
     if (process.platform === 'darwin') app.dock.hide();
     store = new Store(path.join(app.getPath('userData'), 'habit-buddy.json'));
     store.refreshRewards();
     lastActivityPointer = screen.getCursorScreenPoint();
-    restClock = new RestClock({ onChange: rest => {
+    restClock = new RestClock({ idleMs: () => restAfterFor(), onChange: rest => {
       if (!quitting && avatar && !avatar.isDestroyed()) avatar.webContents.send('buddy:rest', rest);
     } });
+    if (!smokeTest) computerActivityTimer = setInterval(() => restClock.observeComputer(powerMonitor.getSystemIdleTime() * 1000), 1000);
+    welcomeManager = new WelcomeManager(store);
+    if (!smokeTest) welcomeManager.active();
     const area = screen.getPrimaryDisplay().workArea;
     const saved = store.snapshot().settings.avatarPosition;
     const size = store.snapshot().settings.avatarSize;
@@ -538,8 +664,17 @@ if (!app.requestSingleInstanceLock()) {
     registerIpc();
     gazeTimer = setInterval(updateNearbyGaze, 100);
     avatar.once('ready-to-show', () => { syncAvatarSize(); avatar.showInactive(); });
+    Promise.all([avatar, popup, effects].map(window => window.webContents.isLoading() ? new Promise(resolve => window.webContents.once('did-finish-load', resolve)) : Promise.resolve())).then(() => {
+      welcomeReady = true;
+      if (!smokeTest) flushWelcome();
+    });
+    if (!smokeTest) welcomeRetryTimer = setInterval(flushWelcome, 1000);
+    powerMonitor.on('suspend', () => welcomeAway('suspend'));
+    powerMonitor.on('lock-screen', () => welcomeAway('lock'));
+    powerMonitor.on('resume', () => welcomeBack('resume'));
+    powerMonitor.on('unlock-screen', () => welcomeBack('unlock'));
     presentationTimer = setInterval(() => {
-      try { restClock.check(); if (store.refreshRewards()) broadcast(); else syncAvatarSize(); }
+      try { restClock.check(); welcomeManager.recordActive(powerMonitor.getSystemIdleTime() < 60); if (store.refreshRewards()) broadcast(); else syncAvatarSize(); }
       catch (error) { console.error('Could not save buddy rewards:', error.message); }
     }, 30000);
     popup.on('blur', () => {
@@ -628,14 +763,18 @@ if (!app.requestSingleInstanceLock()) {
       restClock.now = () => restTestTime;
       try {
         restClock.touch(); avatar.webContents.send('avatar:reaction', { state: 'idle' });
-        restTestTime += REST_AFTER + 1; restClock.check();
+        restTestTime += restClock.timeoutMs + 1; restClock.check();
         await new Promise(resolve => setTimeout(resolve, 50));
-        if (!popup.isVisible() || await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'sleepy') throw new Error('Buddy must nap after ten idle minutes even with the menu open');
+        if (!popup.isVisible() || await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'sleepy') throw new Error('Buddy must nap after the day/night inactivity threshold even with the menu open');
         onboardingFs.writeFileSync(path.join(onboardingCaptures, 'sleep-preview.png'), (await avatar.webContents.capturePage()).toPNG());
+        restClock.observeComputer(0);
+        await new Promise(resolve => setTimeout(resolve, 50));
+        if (restClock.sleeping || await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'idle') throw new Error('Using the computer outside the buddy must wake it');
+        restTestTime += restClock.timeoutMs + 1; restClock.check();
         await popup.webContents.executeJavaScript('window.buddy.activity()');
         await new Promise(resolve => setTimeout(resolve, 50));
         if (restClock.sleeping || await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'idle') throw new Error('Menu activity must wake the buddy');
-        restTestTime += REST_AFTER + 1; restClock.check();
+        restTestTime += restClock.timeoutMs + 1; restClock.check();
         popup.hide(); hideEffects();
         const idleDeadline = restClock.lastActivity;
         if (!showReminder({ name: 'Water' })) throw new Error('Reminder must be allowed while napping');
@@ -661,6 +800,15 @@ if (!app.requestSingleInstanceLock()) {
       }
       const layoutOrigin = avatar.getBounds();
       if (!reducedMotion) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+        const idleFidget = await avatar.webContents.executeJavaScript("hovered = false; playIdleFidget('wobble')");
+        if (!idleFidget) throw new Error('Awake buddy must allow a gentle idle wobble');
+        if (await avatar.webContents.executeJavaScript("getComputedStyle(document.querySelector('#character')).animationName") !== 'idle-wobble') throw new Error('Idle wobble animation must be applied');
+        await avatar.webContents.executeJavaScript("react({ state: 'sleepy', hold: true })");
+        if (await avatar.webContents.executeJavaScript("playIdleFidget('bounce')") || await avatar.webContents.executeJavaScript("document.body.classList.contains('idle-wobble')")) throw new Error('Fidgets must stop while sleeping');
+        await avatar.webContents.executeJavaScript("react({ state: 'idle' }); playIdleFidget('bounce')");
+        if (await avatar.webContents.executeJavaScript("getComputedStyle(document.querySelector('#character')).animationName") !== 'idle-bounce') throw new Error('Idle bounce animation must be applied');
+        await avatar.webContents.executeJavaScript('clearIdleFidget()');
         clearInterval(gazeTimer);
         try {
           avatar.webContents.send('avatar:reaction', { state: 'idle' });
@@ -733,7 +881,7 @@ if (!app.requestSingleInstanceLock()) {
       showPopup();
       const flow = await popup.webContents.executeJavaScript(`(async () => {
         const waitFor = async predicate => {
-          const deadline = Date.now() + 8000;
+          const deadline = Date.now() + 11000;
           while (!await predicate()) {
             if (Date.now() > deadline) throw new Error('UI check timed out: ' + predicate.toString());
             await new Promise(resolve => setTimeout(resolve, 25));
@@ -996,6 +1144,71 @@ if (!app.requestSingleInstanceLock()) {
       if (mysteryStatus(store.snapshot()).opened !== 2 || mysteryStatus(store.snapshot()).available) throw new Error('Second mystery box lifecycle failed');
       if (!popup.isVisible()) throw new Error('Second reward view must open');
       await runShopSmoke({ avatar, popup, store, closeReward, hideEffects, broadcast, showPopup }, captureDir);
+      // Exercise the real menu -> celebration -> snack -> menu lifecycle.
+      closeReward(false); hideEffects();
+      const snackHabits = ['Snack read', 'Snack stretch', 'Snack water'].map(name => store.addHabit({ name, type: 'checkbox' }));
+      broadcast(); showPopup();
+      reactToProgress(store.logProgress(snackHabits[0].id, 1), () => 0);
+      await new Promise(resolve => setTimeout(resolve, 3350));
+      if (popup.isVisible() || !treatPlaying) throw new Error('Intermediate completion must feed immediately after the celebration');
+      await new Promise(resolve => setTimeout(resolve, 800));
+      if (!treatPlaying || popup.isVisible() || await avatar.webContents.executeJavaScript("document.body.dataset.state !== 'treat' || getComputedStyle(document.querySelector('.treat-cookie')).display === 'none'")) throw new Error('The snack must stay visible before the menu returns');
+      await waitForBubble();
+      if (await effects.webContents.executeJavaScript("document.querySelector('#message').textContent") !== lastTreatMessage) throw new Error('The snack must include a thank-you bubble');
+      const renderedFood = await avatar.webContents.executeJavaScript("(() => { const food = document.querySelector('.treat-food'); return { id: food.dataset.food, emoji: food.textContent, label: food.getAttribute('aria-label'), width: food.getBBox().width }; })()");
+      const chosenFood = require('./treats').foods.find(food => food.id === renderedFood.id);
+      if (!chosenFood || renderedFood.emoji !== chosenFood.emoji || renderedFood.label !== chosenFood.name || !renderedFood.width) throw new Error('The munching artwork must match the selected random food');
+      fs.writeFileSync(path.join(captureDir, 'treat-preview.png'), (await avatar.webContents.capturePage()).toPNG());
+      await new Promise(resolve => setTimeout(resolve, 4500));
+      if (treatPlaying || !popup.isVisible() || await avatar.webContents.executeJavaScript("document.body.dataset.state === 'treat'")) throw new Error('The snack must settle after five seconds and return the menu');
+      treatQueue.record(store.logProgress(snackHabits[1].id, 1));
+      treatQueue.record(store.logProgress(snackHabits[2].id, 1));
+      treatQueue.request(store.snapshot());
+      if (treatPlaying || treatQueue.pending.size) throw new Error('The final habit must discard pending snacks in favor of the present');
+      // Leave the welcome checks with the same already-opened present state.
+      store.openMystery(); broadcast(); hideEffects();
+      const actualWelcomeNow = welcomeManager.now;
+      const actualMotion = reducedMotion;
+      let welcomeTestTime = new Date(); welcomeTestTime.setDate(welcomeTestTime.getDate() + 1); welcomeTestTime.setHours(8, 0, 0, 0);
+      welcomeManager.now = () => welcomeTestTime;
+      try {
+        hideEffects(); popup.hide();
+        restClock.lastActivity -= restClock.timeoutMs + 1; restClock.check();
+        const origin = avatar.getBounds(), preferred = store.snapshot().settings.avatarSize;
+        welcomeManager.active();
+        if (!flushWelcome()) throw new Error('First morning launch must queue a welcome');
+        await new Promise(resolve => setTimeout(resolve, 150));
+        if (restClock.sleeping || popup.isVisible()) throw new Error('Welcome must wake the buddy without opening a menu');
+        if (!reducedMotion) {
+          if (!rolling || avatar.getBounds().x === origin.x || await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'welcome-dance') throw new Error('Morning hello must do a happy dance across the desktop');
+          await new Promise(resolve => setTimeout(resolve, 2800));
+        }
+        await waitForBubble();
+        if (rolling || Math.abs(avatar.getBounds().x - origin.x) > 1 || Math.abs(avatar.getBounds().y - origin.y) > 1) throw new Error('Welcome dance must return to the saved spot');
+        if (store.snapshot().settings.avatarSize !== preferred) throw new Error('Welcome must preserve the preferred size');
+        if (await effects.webContents.executeJavaScript("document.querySelector('#message').textContent") !== store.snapshot().welcomes.lastMessage) throw new Error('Morning welcome text must appear beside the buddy');
+        fs.writeFileSync(path.join(captureDir, 'welcome-back-preview.png'), (await effects.webContents.capturePage()).toPNG());
+        welcomeManager.active(); if (welcomeManager.pending) throw new Error('A repeated launch must not repeat the morning welcome');
+        powerMonitor.emit('lock-screen'); powerMonitor.emit('suspend');
+        welcomeTestTime = new Date(welcomeTestTime.getTime() + 70 * 60000);
+        powerMonitor.emit('resume');
+        if (welcomeManager.pending || effectState) throw new Error('Resume must wait while the screen is locked');
+        restClock.lastActivity -= restClock.timeoutMs + 1; restClock.check();
+        powerMonitor.emit('unlock-screen');
+        await waitForBubble();
+        if (restClock.sleeping || rolling || effectState !== 'greeting') throw new Error('Long-break return must wake and greet with a small reaction');
+        const greetingId = effectId;
+        powerMonitor.emit('resume'); powerMonitor.emit('unlock-screen');
+        if (effectId !== greetingId || welcomeManager.pending) throw new Error('Wake and unlock must not give two greetings');
+        hideEffects(); reducedMotion = true;
+        welcomeTestTime = new Date(welcomeTestTime.getTime() + 24 * 60 * 60000);
+        welcomeManager.active(); flushWelcome(); await waitForBubble();
+        if (rolling || activeWelcome) throw new Error('Reduced motion must greet without desktop travel');
+      } finally {
+        welcomeManager.now = actualWelcomeNow; reducedMotion = actualMotion;
+        clearTimeout(welcomeTimer); activeWelcome = null; welcomeManager.pending = null;
+        welcomeManager.locked = false; welcomeManager.suspended = false; stopRoll(); hideEffects();
+      }
       console.log('SMOKE TEST PASSED: habits, reactions, speech bubbles, rewards, shop preview and purchases, mix-and-match outfits on all buddies, and collection persistence.');
       app.quit();
     }

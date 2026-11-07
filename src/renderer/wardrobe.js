@@ -27,7 +27,9 @@
   };
   function buddyMarkup(avatar, outfit = {}, animated = false) {
     const face = '<g id="face"><ellipse cx="32" cy="61" rx="7" ry="4" fill="#e5b8a9"/><ellipse cx="68" cy="61" rx="7" ry="4" fill="#e5b8a9"/><g class="gaze-eyes" stroke="#3d5140" stroke-width="4" stroke-linecap="round"><path class="eye eye-left" d="M36 49V54"/><path class="eye eye-right" d="M64 49V54"/></g><path class="mouth normal-mouth" d="M44 62Q50 68 56 62" fill="none" stroke="#3d5140" stroke-width="2.5" stroke-linecap="round"/>' + (animated ? '<path class="mouth happy-mouth" d="M43 62Q50 71 57 62" fill="none" stroke="#3d5140" stroke-width="3" stroke-linecap="round"/><path class="happy-eyes" d="M31 53Q36 46 41 53M59 53Q64 46 69 53" fill="none" stroke="#3d5140" stroke-width="3" stroke-linecap="round"/><path class="mouth sleepy-mouth" d="M46 65Q50 67 54 65" fill="none" stroke="#3d5140" stroke-width="2" stroke-linecap="round"/>' : '') + '</g>';
-    return (bodies[avatar] || bodies.plant) + face + ['neck', 'eyes', 'hand', 'hat'].map(slot => accessoryMarkup(outfit[slot])).join('');
+    const glow = animated ? '<ellipse class="treat-glow" cx="50" cy="54" rx="43" ry="40" fill="var(--accent)"/>' : '';
+    const snack = animated ? '<path class="mouth munch-mouth" d="M46 65Q50 67 54 65" fill="none" stroke="#3d5140" stroke-width="2.5" stroke-linecap="round"/><g class="treat-cookie"><text class="treat-food" x="50" y="82" text-anchor="middle" font-size="19" font-family="Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif">🍪</text></g><g class="treat-crumbs" fill="#c49d65"><circle cx="41" cy="72" r="1.1"/><circle cx="59" cy="74" r="1.2"/><circle cx="44" cy="78" r=".8"/></g>' : '';
+    return glow + (bodies[avatar] || bodies.plant) + face + ['neck', 'eyes', 'hand', 'hat'].map(slot => accessoryMarkup(outfit[slot])).join('') + snack;
   }
   function preview(avatar, outfit) {
     return `<svg viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="91" rx="29" ry="4" fill="#263f31" opacity=".1"/>${buddyMarkup(avatar, outfit)}</svg>`;

@@ -25,6 +25,7 @@ window.buddy.getRest().then(updateRest).catch(console.error);
 function idleState() {
   if (!buddyState) return;
   if (!buddyState.settings.hatched) {
+    clearIdleFidget();
     document.body.dataset.state = 'egg';
     applyGaze();
     button.setAttribute('aria-label', 'Meet your buddy. Click to hatch.');
@@ -34,15 +35,24 @@ function idleState() {
   const gift = HabitDomain.mysteryStatus(buddyState).available;
   button.setAttribute('aria-label', gift ? 'Open your mystery box. Drag to move.' : 'Open or close Habit Buddy. Drag to move.');
   button.title = gift ? 'A little surprise is waiting. Click to open.' : `${buddyState.settings.buddyName} · Click for your day · double-click for affection`;
-  if (gift) { document.body.dataset.state = 'gift'; applyGaze(); return; }
+  if (gift) { clearIdleFidget(); document.body.dataset.state = 'gift'; applyGaze(); return; }
   document.body.dataset.state = resting ? 'sleepy' : 'idle';
+  if (resting) clearIdleFidget();
   applyGaze();
 }
-function react({ state, followUp, direction = 1, hold = false, duration = null }) {
+function react({ state, followUp, direction = 1, hold = false, duration = null, treatSize = 'small', food = null }) {
+  clearIdleFidget();
   clearTimeout(reactionTimer);
   reacting = state !== 'idle';
   document.body.dataset.state = state;
   document.body.dataset.direction = direction;
+  document.body.dataset.treatSize = treatSize;
+  if (state === 'treat' && food) {
+    const snack = document.querySelector('.treat-food');
+    snack.textContent = food.emoji;
+    snack.dataset.food = food.id;
+    snack.setAttribute('aria-label', food.name);
+  }
   applyGaze();
   if (state === 'idle') { idleState(); return; }
   if (hold) return;
@@ -58,6 +68,7 @@ button.addEventListener('pointerdown', event => {
   if (event.button !== 0) return;
   clearTimeout(clickTimer);
   clearTimeout(petTimer);
+  clearIdleFidget();
   pointer = { x: event.screenX, y: event.screenY, id: event.pointerId };
   applyGaze();
   moved = false;
@@ -141,6 +152,7 @@ for (const edge of resizeEdges) {
   edge.addEventListener('pointerdown', event => {
     if (event.button !== 0) return;
     resizing = event.pointerId;
+    clearIdleFidget();
     applyGaze();
     edge.setPointerCapture(event.pointerId);
     document.body.classList.add('resizing');
@@ -170,7 +182,23 @@ for (const edge of resizeEdges) {
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 window.buddy.motionPreference(reducedMotion.matches);
-reducedMotion.addEventListener('change', event => { window.buddy.motionPreference(event.matches); applyGaze(); });
+reducedMotion.addEventListener('change', event => { window.buddy.motionPreference(event.matches); if (event.matches) clearIdleFidget(); applyGaze(); });
+let idleFidgetTimer;
+function clearIdleFidget() {
+  clearTimeout(idleFidgetTimer);
+  document.body.classList.remove('idle-wobble', 'idle-bounce');
+}
+function playIdleFidget(kind = Math.random() < .5 ? 'wobble' : 'bounce') {
+  if (!['wobble', 'bounce'].includes(kind) || pointer || resizing !== null || reacting || resting || hovered || reducedMotion.matches || document.hidden || document.body.dataset.state !== 'idle') return false;
+  clearIdleFidget();
+  document.body.classList.add(`idle-${kind}`);
+  idleFidgetTimer = setTimeout(clearIdleFidget, 1400);
+  return true;
+}
+function scheduleIdleFidget() {
+  setTimeout(() => { playIdleFidget(); scheduleIdleFidget(); }, 20000 + Math.random() * 25000);
+}
+scheduleIdleFidget();
 function scheduleExpression() {
   setTimeout(() => {
     if (!pointer && resizing === null && !reacting && document.body.dataset.state === 'idle' && !reducedMotion.matches && !document.hidden) {

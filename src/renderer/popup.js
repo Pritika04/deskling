@@ -234,7 +234,7 @@ function renderCollection() {
   if ($('#coin-total').textContent !== balanceText) $('#coin-total').textContent = balanceText;
   $('#shop-tab').setAttribute('aria-pressed', String(shop)); $('#wardrobe-tab').setAttribute('aria-pressed', String(!shop));
   $('#collection-preview').innerHTML = BuddyWardrobe.preview(state.settings.avatar, draftOutfit);
-  $('#wardrobe-slots').hidden = shop; $('#coin-guide').hidden = !shop;
+  $('#wardrobe-slots').hidden = shop;
   const action = $('#collection-action');
   const selected = BuddyWardrobe.catalog.find(item => item.id === selectedAccessory);
   if (shop && selected) {

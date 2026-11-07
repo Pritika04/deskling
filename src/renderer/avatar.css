@@ -10,6 +10,12 @@ body[data-avatar="plant"] .plant, body[data-avatar="pineapple"] .pineapple, body
 .plant > path:first-child { fill: var(--soft); }
 .plant > path:last-child { fill: var(--accent); }
 #character { transform-origin: 50px 52px; }
+body[data-state="idle"] #character { animation: awake-breathe 6s ease-in-out infinite; }
+body[data-state="idle"].idle-wobble #character { animation: idle-wobble 1.4s ease-in-out; }
+body[data-state="idle"].idle-bounce #character { animation: idle-bounce 1.4s ease-in-out; }
+@keyframes awake-breathe { 50% { transform: translateY(-.7px) scale(1.004, .996); } }
+@keyframes idle-wobble { 25% { transform: rotate(-2deg); } 65% { transform: rotate(2deg); } }
+@keyframes idle-bounce { 30%, 70% { transform: translateY(-2px); } 50% { transform: translateY(0); } }
 #egg { display: none; transform-origin: 50px 85px; }
 .egg-crack { opacity: 0; }
 body[data-state="egg"] #character, body[data-state="hatching"] #character { display: none; }
@@ -41,12 +47,36 @@ body[data-state="gift"] .gift-paper { fill: #f1dca6; stroke: #b49350; }
 @keyframes gift-shimmer { 50% { opacity: .3; } }
 @keyframes gift-wiggle { 0%, 80%, 100% { transform: rotate(0); } 85% { transform: rotate(-5deg); } 90% { transform: rotate(5deg); } 95% { transform: rotate(-3deg); } }
 .happy-mouth, .happy-eyes, .sleepy-mouth, .sleep-marks, .confetti { display: none; }
+.treat-glow, .treat-cookie, .treat-crumbs, .munch-mouth { display: none; }
+body[data-state="treat"] { --snack-scale: 1; }
+body[data-state="treat"][data-treat-size="big"] { --snack-scale: 1.15; }
+body[data-state="treat"] .normal-mouth { display: none; }
+body[data-state="treat"] .munch-mouth { display: inline; transform-box: fill-box; transform-origin: center; animation: munch .45s ease-in-out 8 .3s; }
+body[data-state="treat"] .treat-cookie { display: inline; transform-origin: 50px 76px; animation: nibble 5s ease-in-out both; }
+body[data-state="treat"] .treat-glow { display: inline; opacity: .12; animation: snack-glow 5s ease-in-out both; }
+body[data-state="treat"] .treat-crumbs { display: inline; opacity: 0; animation: snack-crumbs 1s ease-out 3 .7s; }
+body[data-state="treat"] #character { animation: snack-sway .7s ease-in-out 6; }
+@keyframes munch { 50% { transform: scale(.8, 1.2); } }
+@keyframes nibble {
+  0% { opacity: 0; transform: translateY(5px) scale(.7); }
+  12% { opacity: 1; transform: translateY(0) scale(var(--snack-scale)); }
+  28%, 54% { opacity: 1; transform: translateY(-3px) rotate(-5deg) scale(var(--snack-scale)); }
+  40%, 68% { opacity: 1; transform: translateY(0) rotate(3deg) scale(.85); }
+  86%, 100% { opacity: 0; transform: translateY(-3px) scale(.3); }
+}
+@keyframes snack-glow { 0%, 100% { opacity: 0; } 25%, 65% { opacity: .2; } }
+@keyframes snack-crumbs { 15% { opacity: .8; } 100% { opacity: 0; transform: translateY(5px); } }
+@keyframes snack-sway { 50% { transform: translateY(-1px) rotate(1deg); } }
 body[data-state="smile"] .normal-mouth { stroke-width: 3.5; }
 body[data-state="celebrate"] .normal-mouth, body[data-state="celebrate"] .eye, body[data-state="sleepy"] .normal-mouth { display: none; }
 body[data-state="celebrate"] .happy-mouth, body[data-state="celebrate"] .happy-eyes, body[data-state="sleepy"] .sleepy-mouth, body[data-state="sleepy"] .sleep-marks { display: inline; }
 body[data-state="halfway"] .normal-mouth, body[data-state="halfway"] .eye { display: none; }
 body[data-state="halfway"] .happy-mouth, body[data-state="halfway"] .happy-eyes { display: inline; }
 body[data-state="halfway"] #character { animation: hop .5s ease-in-out 2; }
+body[data-state="welcome-dance"] .normal-mouth, body[data-state="welcome-dance"] .eye { display: none; }
+body[data-state="welcome-dance"] .happy-mouth, body[data-state="welcome-dance"] .happy-eyes { display: inline; }
+body[data-state="welcome-dance"] #character { animation: welcome-step .45s ease-in-out 6; }
+@keyframes welcome-step { 25% { transform: translateY(-5px) rotate(-5deg); } 75% { transform: translateY(-3px) rotate(5deg); } }
 body[data-state="sleepy"] .eye { transform: scaleY(.12); }
 body[data-state="sleepy"] #character { animation: breathe 3s ease-in-out infinite; }
 body[data-state="sleepy"] .sleep-marks text { transform-box: fill-box; transform-origin: center; animation: sleepy-drift 2.8s ease-in-out infinite; }

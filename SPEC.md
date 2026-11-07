@@ -20,7 +20,7 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 ## Core principles
 
 1. **Minimal.** It should never feel like a to-do list sitting in your face.
-2. **Zero setup friction.** Installs with one terminal command, launches at login, and just runs.
+2. **Zero setup friction.** Installs easily and opens as a normal desktop app.
 3. **No presets.** The user creates every habit themselves. The first launch is an empty state.
 4. **One-tap logging.** No typing needed to log progress.
 5. **Gentle by design.** No red, no "you failed" messaging, and a missed day never feels punishing.
@@ -41,8 +41,11 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 - A one-time welcome starts as a small egg. Clicking makes it wobble and crack, reveals the buddy, and opens a dedicated naming view. A saved name completes the welcome; closing early lets the user resume later. Existing habits and history stay intact. Names can be changed in settings.
 - Hover briefly to pet the buddy, including while the habit menu is open; double-click for a random boop, cuddle, or wiggle. Single-click continues to open habits. Hover affection waits during celebrations or rewards. These interactions never log progress. The habit menu shows the buddy's name and is placed above, below, or beside the buddy without covering it.
 - While awake and idle, the eyes make a tiny, smooth glance toward a nearby cursor, easing back to centre outside a small radius. Gaze pauses for sleep, reactions, dragging, resizing, presents, and reduced-motion preferences. It never counts as user activity or resets the nap timer.
+- Opening the app or returning from sleep/unlock gives the first daily welcome after 5 AM, once per day across restarts. The buddy wakes, does a short happy dance across part of the desktop, returns to its spot, then shares a randomized hello. Later first visits use time-appropriate wording. After an hour asleep or locked, it gives a smaller welcome-back wiggle and message. Morning welcomes take priority, and overlapping resume/unlock events never duplicate greetings. Welcome bubbles wait for an open menu or celebration to finish, never steal focus, and respect reduced motion. The initial hatch counts as the first hello.
 - Drawn as **SVG animated with CSS**, original artwork with no external licensing.
 - All avatars share one **face rig** (eyes, mouth, cheeks) so each reaction is built once and works on every avatar.
+- Intermediate habit completions earn a tiny automatic treat once per habit per day. Immediately after confetti or rolling, the buddy munches for five seconds with a soft glow and a randomized thank-you bubble, then the menu returns. Several completions merge into one slightly bigger snack. The last habit clears waiting treats and uses the daily present instead. No feeding controls or care meter are needed.
+- Treats shuffle through 124 foods with small food emoji and 60 playful reactions, including food-specific wording. Each food and reaction appears once per shuffle cycle during a session, with no immediate repeats between cycles. The editable catalog lives in `content/treats.json`.
 - The plant avatar may optionally have growth stages tied to daily progress (seed, sprout, sapling, tree, tree with fruit).
 
 ### 3. Avatar reactions
@@ -53,11 +56,12 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 | Halfway encouragement | First reaching halfway through a habit that day; rotate short phrases such as “Keep it going!” and “Way to go!” without repeating the previous phrase |
 | Laugh + confetti | A habit completed |
 | Wink | Streak milestone |
-| Sleepy | Ten minutes without interaction with the buddy or its menu |
+| Sleepy | Computer inactivity for 45 minutes during 6 AM–10 PM, or 10 minutes overnight |
 | Mystery box | All habits done for the day |
 
 ### 4. Popup window
-- Hovering, clicking, petting, moving/resizing the buddy, logging progress, and real input in its menu reset a ten-minute inactivity timer and wake the buddy. Leaving a menu open without activity does not keep it awake. Reminders and random thoughts briefly wake its expression, then let it resume its nap without resetting the timer. Time of day changes greeting text, not the sleep rule. The timer starts fresh on launch and does not change habit data.
+- The buddy stays awake while the computer is actively used, including work in other apps. It naps after 45 minutes of computer inactivity during 6 AM–10 PM, or 10 minutes during 10 PM–6 AM, using local time without any working-hours setup. Using the computer or interacting directly with the buddy wakes it. Reminders and random thoughts briefly wake its expression, then let it resume its nap without inventing user activity. The timer starts fresh on launch and does not change habit data.
+- While awake and idle, a very subtle breathing animation and occasional tiny wobble or bounce (every random 20–45 seconds) add life without moving its window or opening messages. Fidgets pause for hover affection, sleep, reactions, dragging/resizing, and reduced motion; they never keep it awake.
 - Small and calm. Shows today's habits, today's progress, the streak, and the heat map.
 - A gear icon for settings (palette, avatar choice, reminders), hidden by default.
 
@@ -111,7 +115,7 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 - Coins, reward ledgers, owned items, and outfits are stored locally. Purchases and reward credits are saved atomically.
 
 ### 11. Install and launch
-- **Launch at login** on both platforms, enabled by default but toggleable.
+- Manual app launch for now; launch at login is deferred.
 - One-line install per OS, pulling the right build from GitHub Releases:
   - macOS: a `curl ... | sh` script (or Homebrew cask later)
   - Windows: a PowerShell one-liner (or winget later)
@@ -135,7 +139,7 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 6. Reminders (buddy speech bubbles)
 7. Mystery box and content pool
 8. Coin shop and mix-and-match wardrobe
-9. Launch at login, install scripts, GitHub Actions release builds
+9. Install scripts and GitHub Actions release builds (manual app launch)
 
 ## Out of scope for v1 (future ideas)
 

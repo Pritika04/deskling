@@ -29,6 +29,7 @@ function initialState() {
     mystery: { days: {}, usedIds: [], lastType: null },
     thoughts: { usedIds: [], lastType: null, nextAt: 0, day: null },
     collection: initialCollection(),
+    welcomes: { day: null, lastSeenAt: 0, lastGreetingAt: 0, lastMessage: '' },
   };
 }
 
@@ -54,6 +55,7 @@ function validateState(state) {
       (state.settings.accent !== null && !/^#[0-9a-f]{6}$/i.test(state.settings.accent))) throw new Error('Invalid appearance settings.');
   state.habits.forEach(validateHabit);
   validateCollection(state.collection);
+  if (!state.welcomes || (state.welcomes.day !== null && !/^\d{4}-\d{2}-\d{2}$/.test(state.welcomes.day)) || !Number.isFinite(state.welcomes.lastSeenAt) || state.welcomes.lastSeenAt < 0 || !Number.isFinite(state.welcomes.lastGreetingAt) || state.welcomes.lastGreetingAt < 0 || typeof state.welcomes.lastMessage !== 'string' || state.welcomes.lastMessage.length > 240) throw new Error('Invalid welcome history.');
   if (typeof state.settings.hatched !== 'boolean' || typeof state.settings.buddyName !== 'string' || state.settings.buddyName.length > 24 || (state.settings.hatched && !state.settings.buddyName.trim())) throw new Error('Give your buddy a name of up to 24 characters.');
   if (!state.thoughts || !Array.isArray(state.thoughts.usedIds) || state.thoughts.usedIds.some(id => typeof id !== 'string') || (state.thoughts.lastType !== null && typeof state.thoughts.lastType !== 'string') || !Number.isFinite(state.thoughts.nextAt) || state.thoughts.nextAt < 0) throw new Error('Invalid buddy thought history.');
   if (state.thoughts.day !== null && !/^\d{4}-\d{2}-\d{2}$/.test(state.thoughts.day)) throw new Error('Invalid buddy thought day.');
@@ -70,6 +72,7 @@ function validateState(state) {
       validateHabit(entry);
       if (!Number.isFinite(entry.amount) || entry.amount < 0 || (entry.type !== 'minutes' && entry.amount > entry.goal)) throw new Error('Invalid progress.');
       if (entry.halfwayCelebrated !== undefined && typeof entry.halfwayCelebrated !== 'boolean') throw new Error('Invalid milestone data.');
+      if (entry.treatEarned !== undefined && typeof entry.treatEarned !== 'boolean') throw new Error('Invalid treat milestone.');
     }
     if (new Set(entries.map(entry => entry.id)).size !== entries.length) throw new Error('Duplicate daily entries.');
   }
@@ -90,6 +93,7 @@ class Store {
         if (!Object.hasOwn(this.state, 'reminderQueue')) this.state.reminderQueue = [];
         if (!Object.hasOwn(this.state, 'mystery')) this.state.mystery = { days: {}, usedIds: [], lastType: null };
         if (!Object.hasOwn(this.state, 'collection')) this.state.collection = initialCollection();
+        if (!Object.hasOwn(this.state, 'welcomes')) this.state.welcomes = { day: null, lastSeenAt: 0, lastGreetingAt: 0, lastMessage: '' };
         if (!Object.hasOwn(this.state, 'thoughts')) this.state.thoughts = { usedIds: [], lastType: null, nextAt: 0, day: null };
         if (this.state.thoughts && !Object.hasOwn(this.state.thoughts, 'day')) this.state.thoughts.day = null;
         for (const [key, value] of Object.entries(initialState().settings)) {
@@ -145,6 +149,11 @@ class Store {
   refreshRewards() {
     const next = this.snapshot();
     return accrueCoins(next, this.now()) ? this.commit(next) : null;
+  }
+
+  saveWelcome(patch) {
+    if (!patch || Object.keys(patch).some(key => !Object.hasOwn(this.state.welcomes, key))) throw new Error('Unknown welcome setting.');
+    const next = this.snapshot(); Object.assign(next.welcomes, patch); return this.commit(next);
   }
 
   buyAccessory(id) {
@@ -270,11 +279,14 @@ class Store {
     entry.amount = habit.type === 'minutes' ? replace ? amount : before + amount : Math.min(entry.goal, before + amount);
     const halfway = !entry.halfwayCelebrated && before < entry.goal / 2 && entry.amount >= entry.goal / 2 && entry.amount < entry.goal;
     if (entry.amount >= entry.goal / 2) entry.halfwayCelebrated = true;
+    const completed = before < entry.goal && entry.amount >= entry.goal;
+    const allComplete = daySummary(next.days[day]).allComplete;
+    const treatEligible = completed && !allComplete && !entry.treatEarned;
+    if (completed) entry.treatEarned = true;
     const result = {
       day, habitId, amount: entry.amount,
       halfway,
-      completed: before < entry.goal && entry.amount >= entry.goal,
-      allComplete: daySummary(next.days[day]).allComplete,
+      completed, allComplete, treatEligible,
       state: this.commit(next),
     };
     return result;
