@@ -9,6 +9,7 @@ const { startReminders } = require('./reminders');
 const { formatSurprise } = require('./mystery');
 const { startThoughts } = require('./thoughts');
 const { runShopSmoke } = require('./smoke-shop');
+const { RestClock, REST_AFTER } = require('./rest');
 const { popupPosition, bubbleWithMenu, mouthPoint } = require('./popup-position');
 const { chooseGreeting, giftSize, chooseEncouragement, encouragements } = require('./greetings');
 
@@ -29,6 +30,8 @@ let lastEncouragement = '';
 let bubbleSize = null;
 let presentationTimer;
 let celebrating = false;
+let restClock;
+let lastActivityPointer;
 let effectState = null;
 let celebrationTimer;
 let reopenAfterCelebration = false;
@@ -98,6 +101,7 @@ function previewResize(cursor) {
 }
 
 function showPopup() {
+  restClock?.touch();
   if (!store.snapshot().settings.hatched && !hatching) { hatchBuddy(); return; }
   closeReward(false);
   cancelCelebration();
@@ -229,7 +233,7 @@ function showReminder(habit) {
   if (!store.snapshot().settings.hatched) return false;
   if (quitting || rolling || drag || resize || reopenAfterCelebration || popup.isVisible() || effectState || effects.webContents.isLoading()) return false;
   const wording = /water|hydrat/i.test(habit.name) ? 'A little water break? Whenever you feel ready. 💧' : `A little moment for ${habit.name}? Whenever you're ready. 🌱`;
-  avatar.webContents.send('avatar:reaction', { state: 'smile' });
+  avatar.webContents.send('avatar:reaction', { state: 'smile', duration: 3000 });
   showEffects('reminder', wording);
   return true;
 }
@@ -265,7 +269,7 @@ function showThought(item, checkOnly = false) {
   if (!store.snapshot().settings.hatched) return false;
   if (quitting || rewardOpen || rolling || drag || resize || reopenAfterCelebration || popup.isVisible() || effectState || effects.webContents.isLoading() || mysteryStatus(store.snapshot()).available) return false;
   if (!checkOnly) {
-    avatar.webContents.send('avatar:reaction', { state: 'smile' });
+    avatar.webContents.send('avatar:reaction', { state: 'smile', duration: 3000 });
     showEffects('mystery', formatSurprise(item));
   }
   return true;
@@ -282,6 +286,7 @@ function trayMenu() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Open Habit Buddy', click: showPopup },
     { label: 'Pause reminders', type: 'checkbox', checked: store.snapshot().settings.remindersPaused, click: item => {
+      restClock.touch();
       try {
         store.updateSettings({ remindersPaused: item.checked });
         if (item.checked) { store.clearReminderQueue(); if (effectState === 'reminder') hideEffects(); }
@@ -322,6 +327,19 @@ function createWindow(options, page) {
 
 function registerIpc() {
   const trusted = event => [avatar, popup].some(window => window && event.sender === window.webContents && event.senderFrame === window.webContents.mainFrame);
+  ipcMain.on('buddy:activity', (event, kind) => {
+    if (!trusted(event)) return;
+    const cursor = screen.getCursorScreenPoint();
+    const moved = !lastActivityPointer || cursor.x !== lastActivityPointer.x || cursor.y !== lastActivityPointer.y;
+    lastActivityPointer = cursor;
+    // A window appearing beneath a stationary cursor is not a new hover.
+    if (['pointermove', 'pointerover'].includes(kind) && !moved) return;
+    restClock.touch();
+  });
+  ipcMain.handle('buddy:rest', event => {
+    if (!trusted(event)) throw new Error('Unknown window.');
+    return { sleeping: restClock.check() };
+  });
   ipcMain.on('effects:fit', (event, data) => {
     if (event.sender !== effects.webContents || event.senderFrame !== effects.webContents.mainFrame || !effectState || data?.id !== effectId || !Number.isFinite(data.width) || !Number.isFinite(data.height)) return;
     bubbleSize = { width: Math.max(40, Math.min(320, Math.ceil(data.width))), height: Math.max(40, Math.min(600, Math.ceil(data.height))) };
@@ -333,10 +351,12 @@ function registerIpc() {
   });
   ipcMain.handle('mystery:open', event => {
     if (!trusted(event)) throw new Error('Unknown window.');
+    restClock.touch();
     return openMystery();
   });
   ipcMain.handle('buddy:name', (event, name) => {
     if (!trusted(event)) throw new Error('Unknown window.');
+    restClock.touch();
     const next = store.nameBuddy(name);
     cancelHatching(); broadcast();
     return next;
@@ -344,6 +364,7 @@ function registerIpc() {
   ipcMain.handle('avatar:affection', (event, kind) => {
     if (!trusted(event) || event.sender !== avatar.webContents) return false;
     if (!['pet', 'play'].includes(kind)) return false;
+    restClock.touch();
     if (!store.snapshot().settings.hatched || rewardOpen || rolling || drag || resize || reopenAfterCelebration || effects.isVisible() || mysteryStatus(store.snapshot()).available || Date.now() - affectionAt < 2500) return false;
     affectionAt = Date.now();
     if (kind === 'play') popup.hide();
@@ -360,6 +381,7 @@ function registerIpc() {
   });
   const log = (event, habitId, amount, replace = false) => {
     if (!trusted(event) || typeof habitId !== 'string') throw new Error('Invalid progress request.');
+    restClock.touch();
     const result = store.logProgress(habitId, amount, { replace });
     reactToProgress(result);
     return result;
@@ -385,18 +407,22 @@ function registerIpc() {
     },
   })) ipcMain.handle(channel, (event, ...args) => {
     if (!trusted(event)) throw new Error('Unknown window.');
+    restClock.touch();
     action(...args); broadcast(); return store.snapshot();
   });
   ipcMain.handle('avatar:play', (event, state) => {
     if (!trusted(event) || !['sleepy', 'wink', 'idle'].includes(state)) throw new Error('Unknown buddy state.');
+    restClock.touch();
     avatar.webContents.send('avatar:reaction', { state });
   });
   ipcMain.handle('avatar:roll', event => {
     if (event.sender !== avatar.webContents) throw new Error('Unknown window.');
+    restClock.touch();
     return startRoll();
   });
   ipcMain.handle('avatar:resize', (event, size) => {
     if (!trusted(event)) throw new Error('Unknown window.');
+    restClock.touch();
     stopRoll();
     store.updateSettings({ avatarSize: size });
     syncAvatarSize();
@@ -407,6 +433,7 @@ function registerIpc() {
   });
   ipcMain.on('avatar:resize-drag', (event, phase, edge) => {
     if (event.sender !== avatar.webContents) return;
+    restClock.touch();
     if (phase === 'start' && ['top', 'bottom'].includes(edge)) {
       cancelCelebration();
       hideEffects();
@@ -431,15 +458,17 @@ function registerIpc() {
   });
   ipcMain.on('popup:toggle', event => {
     if (!trusted(event)) return;
+    restClock.touch();
     if (!store.snapshot().settings.hatched) { if (popup.isVisible()) { cancelHatching(); popup.hide(); } else showPopup(); return; }
     if (rewardOpen) { closeReward(); return; }
     if (event.sender === avatar.webContents && mysteryStatus(store.snapshot()).available) {
       try { openMystery(); } catch (error) { dialog.showErrorBox('Your surprise is safe', error.message); }
     } else popup.isVisible() ? popup.hide() : showPopup();
   });
-  ipcMain.on('popup:close', event => { if (trusted(event)) { cancelHatching(); cancelCelebration(); hideEffects(); stopRoll(); popup.hide(); closeReward(); } });
+  ipcMain.on('popup:close', event => { if (trusted(event)) { restClock.touch(); cancelHatching(); cancelCelebration(); hideEffects(); stopRoll(); popup.hide(); closeReward(); } });
   ipcMain.on('avatar:drag', (event, phase) => {
     if (event.sender !== avatar.webContents) return;
+    restClock.touch();
     if (phase === 'start') {
       cancelCelebration();
       hideEffects();
@@ -470,7 +499,7 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => { if (popup) showPopup(); });
-  app.on('before-quit', () => { quitting = true; clearInterval(presentationTimer); clearTimeout(hatchTimer); cancelCelebration(); hideEffects(); stopRoll(); if (stopReminders) stopReminders(); if (stopThoughts) stopThoughts(); });
+  app.on('before-quit', () => { quitting = true; restClock?.stop(); clearInterval(presentationTimer); clearTimeout(hatchTimer); cancelCelebration(); hideEffects(); stopRoll(); if (stopReminders) stopReminders(); if (stopThoughts) stopThoughts(); });
   app.on('window-all-closed', () => {});
   app.on('activate', () => { if (popup) showPopup(); });
   app.whenReady().then(async () => {
@@ -478,6 +507,10 @@ if (!app.requestSingleInstanceLock()) {
     if (process.platform === 'darwin') app.dock.hide();
     store = new Store(path.join(app.getPath('userData'), 'habit-buddy.json'));
     store.refreshRewards();
+    lastActivityPointer = screen.getCursorScreenPoint();
+    restClock = new RestClock({ onChange: rest => {
+      if (!quitting && avatar && !avatar.isDestroyed()) avatar.webContents.send('buddy:rest', rest);
+    } });
     const area = screen.getPrimaryDisplay().workArea;
     const saved = store.snapshot().settings.avatarPosition;
     const size = store.snapshot().settings.avatarSize;
@@ -489,7 +522,7 @@ if (!app.requestSingleInstanceLock()) {
     registerIpc();
     avatar.once('ready-to-show', () => { syncAvatarSize(); avatar.showInactive(); });
     presentationTimer = setInterval(() => {
-      try { if (store.refreshRewards()) broadcast(); else syncAvatarSize(); }
+      try { restClock.check(); if (store.refreshRewards()) broadcast(); else syncAvatarSize(); }
       catch (error) { console.error('Could not save buddy rewards:', error.message); }
     }, 30000);
     popup.on('blur', () => {
@@ -573,6 +606,42 @@ if (!app.requestSingleInstanceLock()) {
       await avatar.webContents.executeJavaScript("document.querySelector('#buddy').dispatchEvent(new MouseEvent('click', { detail: 1 }))");
       await avatar.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 350))');
       if (!popup.isVisible()) throw new Error('Single click must still open habits');
+      const actualRestNow = restClock.now;
+      let restTestTime = actualRestNow();
+      restClock.now = () => restTestTime;
+      try {
+        restClock.touch(); avatar.webContents.send('avatar:reaction', { state: 'idle' });
+        restTestTime += REST_AFTER + 1; restClock.check();
+        await new Promise(resolve => setTimeout(resolve, 50));
+        if (!popup.isVisible() || await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'sleepy') throw new Error('Buddy must nap after ten idle minutes even with the menu open');
+        onboardingFs.writeFileSync(path.join(onboardingCaptures, 'sleep-preview.png'), (await avatar.webContents.capturePage()).toPNG());
+        await popup.webContents.executeJavaScript('window.buddy.activity()');
+        await new Promise(resolve => setTimeout(resolve, 50));
+        if (restClock.sleeping || await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'idle') throw new Error('Menu activity must wake the buddy');
+        restTestTime += REST_AFTER + 1; restClock.check();
+        popup.hide(); hideEffects();
+        const idleDeadline = restClock.lastActivity;
+        if (!showReminder({ name: 'Water' })) throw new Error('Reminder must be allowed while napping');
+        await waitForBubble();
+        const reminderExpression = await avatar.webContents.executeJavaScript('document.body.dataset.state');
+        if (!restClock.sleeping || restClock.lastActivity !== idleDeadline || reminderExpression !== 'smile') throw new Error(`Reminder must wake the expression without resetting inactivity: ${JSON.stringify({ sleeping: restClock.sleeping, last: restClock.lastActivity, idleDeadline, reminderExpression })}`);
+        await new Promise(resolve => setTimeout(resolve, 3100));
+        if (await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'sleepy') throw new Error('Buddy must return to its nap after the reminder');
+        const napThought = require('./thoughts').pool[0];
+        if (!showThought(napThought)) throw new Error('Daytime thoughts must be allowed while napping');
+        await waitForBubble();
+        if (restClock.lastActivity !== idleDeadline || await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'smile') throw new Error('Thoughts must briefly wake without counting as user activity');
+        await new Promise(resolve => setTimeout(resolve, 3100));
+        if (await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'sleepy') throw new Error('Buddy must settle back down after a thought');
+        affectionAt = 0;
+        await avatar.webContents.executeJavaScript("lastPet = 0; document.querySelector('#buddy').dispatchEvent(new PointerEvent('pointerenter'))");
+        await new Promise(resolve => setTimeout(resolve, 600));
+        if (restClock.sleeping || !['boop', 'cuddle', 'wiggle'].includes(await avatar.webContents.executeJavaScript('document.body.dataset.state'))) throw new Error('Petting must wake the buddy');
+        await avatar.webContents.executeJavaScript("document.querySelector('#buddy').dispatchEvent(new PointerEvent('pointerleave'))");
+      } finally {
+        restClock.now = actualRestNow; restClock.touch(); hideEffects();
+        avatar.webContents.send('avatar:reaction', { state: 'idle' }); showPopup();
+      }
       const layoutOrigin = avatar.getBounds();
       const layoutArea = screen.getDisplayMatching(layoutOrigin).workArea;
       placeAvatar({ x: layoutArea.x + Math.round(layoutArea.width / 2), y: layoutArea.y + Math.round(layoutArea.height / 2) });

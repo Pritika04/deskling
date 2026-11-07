@@ -52,10 +52,11 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 | Halfway encouragement | First reaching halfway through a habit that day; rotate short phrases such as “Keep it going!” and “Way to go!” without repeating the previous phrase |
 | Laugh + confetti | A habit completed |
 | Wink | Streak milestone |
-| Sleepy | Late at night, or an untouched day |
+| Sleepy | Ten minutes without interaction with the buddy or its menu |
 | Mystery box | All habits done for the day |
 
 ### 4. Popup window
+- Hovering, clicking, petting, moving/resizing the buddy, logging progress, and real input in its menu reset a ten-minute inactivity timer and wake the buddy. Leaving a menu open without activity does not keep it awake. Reminders and random thoughts briefly wake its expression, then let it resume its nap without resetting the timer. Time of day changes greeting text, not the sleep rule. The timer starts fresh on launch and does not change habit data.
 - Small and calm. Shows today's habits, today's progress, the streak, and the heat map.
 - A gear icon for settings (palette, avatar choice, reminders), hidden by default.
 

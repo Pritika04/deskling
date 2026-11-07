@@ -4,6 +4,13 @@ const button = document.querySelector('#buddy');
 let buddyState;
 let reactionTimer;
 let reacting = false;
+let resting = false;
+function updateRest(rest) {
+  resting = rest.sleeping;
+  if (!reacting) idleState();
+}
+window.buddy.onRest(updateRest);
+window.buddy.getRest().then(updateRest).catch(console.error);
 function idleState() {
   if (!buddyState) return;
   if (!buddyState.settings.hatched) {
@@ -16,11 +23,9 @@ function idleState() {
   button.setAttribute('aria-label', gift ? 'Open your mystery box. Drag to move.' : 'Open or close Habit Buddy. Drag to move.');
   button.title = gift ? 'A little surprise is waiting. Click to open.' : `${buddyState.settings.buddyName} · Click for your day · double-click for affection`;
   if (gift) { document.body.dataset.state = 'gift'; return; }
-  const hour = new Date().getHours();
-  const untouched = !HabitDomain.summary(buddyState).progress;
-  document.body.dataset.state = hour >= 22 || hour < 6 || (hour >= 18 && untouched) ? 'sleepy' : 'idle';
+  document.body.dataset.state = resting ? 'sleepy' : 'idle';
 }
-function react({ state, followUp, direction = 1, hold = false }) {
+function react({ state, followUp, direction = 1, hold = false, duration = null }) {
   clearTimeout(reactionTimer);
   reacting = state !== 'idle';
   document.body.dataset.state = state;
@@ -30,7 +35,7 @@ function react({ state, followUp, direction = 1, hold = false }) {
   reactionTimer = setTimeout(() => {
     reacting = false;
     if (followUp) react({ state: followUp }); else idleState();
-  }, state === 'sleepy' ? 10000 : state === 'roll' ? 4100 : 2200);
+  }, duration ?? (state === 'sleepy' ? 10000 : state === 'roll' ? 4100 : 2200));
 }
 window.buddy.onReaction(react);
 let pointer = null;

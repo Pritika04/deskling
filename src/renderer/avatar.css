@@ -49,6 +49,13 @@ body[data-state="halfway"] .happy-mouth, body[data-state="halfway"] .happy-eyes 
 body[data-state="halfway"] #character { animation: hop .5s ease-in-out 2; }
 body[data-state="sleepy"] .eye { transform: scaleY(.12); }
 body[data-state="sleepy"] #character { animation: breathe 3s ease-in-out infinite; }
+body[data-state="sleepy"] .sleep-marks text { transform-box: fill-box; transform-origin: center; animation: sleepy-drift 2.8s ease-in-out infinite; }
+body[data-state="sleepy"] .sleep-marks text:nth-child(2) { animation-delay: -1.4s; }
+@keyframes sleepy-drift {
+  0% { opacity: 0; transform: translate(-1px, 3px) scale(.8); }
+  25%, 65% { opacity: .85; }
+  100% { opacity: 0; transform: translate(3px, -6px) scale(1.05); }
+}
 body[data-state="celebrate"] #character { animation: hop .5s ease-in-out 2; }
 body[data-state="celebrate"] .confetti { display: inline; }
 body[data-state="celebrate"] .confetti { stroke-width: 5; }

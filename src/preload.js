@@ -2,8 +2,28 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
+// Only real input counts: layout, animations, and scheduled messages stay quiet.
+let lastMotionAt = 0;
+function recordActivity(event) {
+  if (!event.isTrusted) return;
+  const now = Date.now();
+  if (['pointermove', 'pointerover'].includes(event.type) && now - lastMotionAt < 1000) return;
+  lastMotionAt = now;
+  ipcRenderer.send('buddy:activity', event.type);
+}
+for (const type of ['pointerdown', 'pointermove', 'pointerover', 'keydown', 'input', 'wheel']) {
+  document.addEventListener(type, recordActivity, { capture: true, passive: true });
+}
+
 contextBridge.exposeInMainWorld('buddy', {
   getState: () => ipcRenderer.invoke('state:get'),
+  activity: () => ipcRenderer.send('buddy:activity'),
+  getRest: () => ipcRenderer.invoke('buddy:rest'),
+  onRest: callback => {
+    const listener = (_event, rest) => callback(rest);
+    ipcRenderer.on('buddy:rest', listener);
+    return () => ipcRenderer.removeListener('buddy:rest', listener);
+  },
   nameBuddy: name => ipcRenderer.invoke('buddy:name', name),
   buyAccessory: id => ipcRenderer.invoke('collection:buy', id),
   equipOutfit: outfit => ipcRenderer.invoke('collection:equip', outfit),
