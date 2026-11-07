@@ -13,15 +13,17 @@ let editingCompletedMinutes = null;
 const clockSync = [];
 function syncClocks() { clockSync.forEach(sync => sync()); }
 function showView(view) {
+  if (state && !state.settings.hatched) view = 'welcome';
   const scroller = document.querySelector('main');
   if (currentView === 'home') homeScroll = scroller.scrollTop;
   currentView = view;
   document.querySelectorAll('[data-home]').forEach(element => { element.hidden = view !== 'home'; });
   $('#settings').hidden = view !== 'settings'; $('#editor').hidden = view !== 'editor';
   $('#reward').hidden = view !== 'reward';
-  document.querySelector('footer').hidden = view === 'reward';
+  $('#welcome').hidden = view !== 'welcome';
+  document.querySelector('footer').hidden = ['reward', 'welcome'].includes(view);
   $('#settings-toggle').hidden = view !== 'home'; $('#back-home').hidden = view === 'home';
-  if (view === 'reward') $('#back-home').hidden = true;
+  if (['reward', 'welcome'].includes(view)) $('#back-home').hidden = true;
   $('#settings-toggle').setAttribute('aria-expanded', String(view === 'settings'));
   scroller.scrollTo(0, view === 'home' ? homeScroll : 0);
   message('');
@@ -66,9 +68,9 @@ function countControl(habit, amount, log) {
       const filled = index < amount;
       const slot = node(log && !filled ? 'button' : 'span', undefined, `count-slot${filled ? ' is-filled' : ''}`);
       if (log && !filled) {
-        slot.type = 'button'; slot.title = `Record ${index + 1}${habit.unit ? ` ${habit.unit}` : ''}`;
-        slot.setAttribute('aria-label', `Set ${habit.name} to ${index + 1} of ${habit.goal}`);
-        slot.addEventListener('click', () => log(index + 1 - amount, slot));
+        slot.type = 'button'; slot.title = `Record one for ${habit.name}`;
+        slot.setAttribute('aria-label', `Add one to ${habit.name}. ${amount} of ${habit.goal} recorded`);
+        slot.addEventListener('click', () => log(1, slot));
       } else slot.setAttribute('aria-hidden', 'true');
       if (water) {
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('viewBox', '0 0 16 20'); svg.setAttribute('aria-hidden', 'true');
@@ -102,6 +104,10 @@ function render(next = state) {
   if (!next) return;
   state = next;
   BuddyTheme.apply(state.settings);
+  $('#home-title').textContent = state.settings.buddyName ? `${state.settings.buddyName}’s little space.` : 'A little space for you.';
+  if (!state.settings.hatched) showView('welcome');
+  else if (currentView === 'welcome') showView('home');
+  if (document.activeElement !== $('#rename-buddy')) $('#rename-buddy').value = state.settings.buddyName;
   const now = new Date();
   const data = HabitDomain.summary(state, now);
   if (renderedDay && renderedDay !== data.today) { bannerMessage = ''; editingCompletedMinutes = null; }
@@ -304,6 +310,19 @@ $('#remove-habit').addEventListener('click', async () => {
   } finally { busy = false; }
 });
 $('#settings-toggle').addEventListener('click', () => { showView('settings'); $('#avatar-choice').focus({ preventScroll: true }); });
+$('#name-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  if (busy) return;
+  busy = true;
+  try { render(await window.buddy.nameBuddy($('#buddy-name').value)); }
+  catch (error) { $('#name-error').textContent = 'A little name, up to 24 characters, please.'; }
+  finally { busy = false; }
+});
+$('#rename-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const next = await perform(() => window.buddy.nameBuddy($('#rename-buddy').value));
+  if (next) { render(next); message('A lovely name.'); }
+});
 $('#back-home').addEventListener('click', () => { editing = null; showView('home'); });
 $('#settings-done').addEventListener('click', () => showView('home'));
 $('#mystery-invite').addEventListener('click', () => perform(() => window.buddy.openMystery()));
@@ -317,7 +336,7 @@ for (const [selector, key, getValue] of [
 $('#reset-accent').addEventListener('click', async () => { const result = await perform(() => window.buddy.updateSettings({ accent: null })); if (result) render(result); });
 $('#close').addEventListener('click', () => window.buddy.closePopup());
 document.addEventListener('keydown', event => { if (event.key === 'Escape') {
-  if (currentView === 'reward') { window.buddy.closePopup(); return; }
+  if (['reward', 'welcome'].includes(currentView)) { window.buddy.closePopup(); return; }
   if (currentView !== 'home') { editing = null; showView('home'); } else window.buddy.closePopup();
 } });
 function makeClock(containerSelector, sourceSelector, label) {

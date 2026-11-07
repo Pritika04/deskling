@@ -6,9 +6,15 @@ let reactionTimer;
 let reacting = false;
 function idleState() {
   if (!buddyState) return;
+  if (!buddyState.settings.hatched) {
+    document.body.dataset.state = 'egg';
+    button.setAttribute('aria-label', 'Meet your buddy. Click to hatch.');
+    button.title = 'Someone tiny is waiting. Click to hatch.';
+    return;
+  }
   const gift = HabitDomain.mysteryStatus(buddyState).available;
   button.setAttribute('aria-label', gift ? 'Open your mystery box. Drag to move.' : 'Open or close Habit Buddy. Drag to move.');
-  button.title = gift ? 'A little surprise is waiting. Click to open.' : 'Click for your day · drag to move';
+  button.title = gift ? 'A little surprise is waiting. Click to open.' : `${buddyState.settings.buddyName} · Click for your day · double-click for affection`;
   if (gift) { document.body.dataset.state = 'gift'; return; }
   const hour = new Date().getHours();
   const untouched = !HabitDomain.summary(buddyState).progress;
@@ -31,6 +37,8 @@ let pointer = null;
 let moved = false;
 button.addEventListener('pointerdown', event => {
   if (event.button !== 0) return;
+  clearTimeout(clickTimer);
+  clearTimeout(petTimer);
   pointer = { x: event.screenX, y: event.screenY, id: event.pointerId };
   moved = false;
   button.setPointerCapture(event.pointerId);
@@ -39,7 +47,7 @@ button.addEventListener('pointerdown', event => {
 button.addEventListener('pointermove', event => {
   if (!pointer) return;
   if (Math.hypot(event.screenX - pointer.x, event.screenY - pointer.y) > 4) moved = true;
-  if (moved) window.buddy.drag('move');
+  if (moved) { clearTimeout(clickTimer); window.buddy.drag('move'); }
 });
 function finish() {
   if (!pointer) return;
@@ -49,7 +57,42 @@ function finish() {
 button.addEventListener('pointerup', finish);
 button.addEventListener('pointercancel', () => { moved = true; finish(); });
 button.addEventListener('lostpointercapture', finish);
-button.addEventListener('click', () => { if (!moved) window.buddy.togglePopup(); moved = false; });
+let clickTimer;
+button.addEventListener('click', event => {
+  clearTimeout(clickTimer);
+  if (moved) { moved = false; return; }
+  if (event.detail > 1 && (!buddyState?.settings.hatched || document.body.dataset.state === 'gift')) return;
+  if (!buddyState?.settings.hatched || document.body.dataset.state === 'gift' || event.detail === 0) {
+    window.buddy.togglePopup(); return;
+  }
+  if (event.detail === 1) clickTimer = setTimeout(() => window.buddy.togglePopup(), 300);
+});
+button.addEventListener('dblclick', () => {
+  clearTimeout(clickTimer);
+  if (buddyState?.settings.hatched && document.body.dataset.state !== 'gift') window.buddy.affection().catch(console.error);
+});
+let petTimer;
+let lastPet = 0;
+let hovered = false;
+function schedulePet(delay = 450) {
+  clearTimeout(petTimer);
+  petTimer = setTimeout(async () => {
+    petTimer = null;
+    if (!hovered || pointer || resizing !== null || !buddyState?.settings.hatched || document.body.dataset.state === 'gift') return;
+    if (reacting || Date.now() - lastPet < 5000) { schedulePet(1000); return; }
+    try {
+      if (await window.buddy.affection('pet')) lastPet = Date.now();
+      else if (hovered) schedulePet(1000);
+    } catch (error) {
+      console.error(error);
+    }
+  }, delay);
+}
+button.addEventListener('pointerenter', () => { hovered = true; schedulePet(); });
+button.addEventListener('pointermove', () => {
+  if (hovered && !pointer && !petTimer && Date.now() - lastPet >= 5000) schedulePet();
+});
+button.addEventListener('pointerleave', () => { hovered = false; clearTimeout(petTimer); petTimer = null; });
 
 const resizeEdges = document.querySelectorAll('.resize-edge');
 let resizing = null;

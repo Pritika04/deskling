@@ -4,6 +4,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('buddy', {
   getState: () => ipcRenderer.invoke('state:get'),
+  nameBuddy: name => ipcRenderer.invoke('buddy:name', name),
+  affection: (kind = 'play') => ipcRenderer.invoke('avatar:affection', kind),
   openMystery: () => ipcRenderer.invoke('mystery:open'),
   onReward: callback => {
     const listener = (_event, item) => callback(item);
@@ -28,6 +30,12 @@ contextBridge.exposeInMainWorld('buddy', {
   togglePopup: () => ipcRenderer.send('popup:toggle'),
   closePopup: () => ipcRenderer.send('popup:close'),
   fitPopup: height => ipcRenderer.send('popup:fit', height),
+  fitBubble: size => ipcRenderer.send('effects:fit', size),
+  onBubblePosition: callback => {
+    const listener = (_event, position) => callback(position);
+    ipcRenderer.on('bubble:position', listener);
+    return () => ipcRenderer.removeListener('bubble:position', listener);
+  },
   drag: phase => ipcRenderer.send('avatar:drag', phase),
   resizeAvatar: size => ipcRenderer.invoke('avatar:resize', size),
   resizeDrag: (phase, edge) => ipcRenderer.send('avatar:resize-drag', phase, edge),

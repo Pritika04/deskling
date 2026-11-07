@@ -14,6 +14,37 @@ function setup(t, options) {
   return { file, store: new Store(file, options) };
 }
 
+test('a buddy hatches once when named, keeps its name after restart, and preserves existing habits', t => {
+  const { store, file } = setup(t);
+  assert.equal(store.snapshot().settings.hatched, false);
+  const habit = store.addHabit({ name: 'Water', type: 'count', goal: 8 });
+  store.logProgress(habit.id, 3);
+  for (const name of ['', '   ', 'x'.repeat(25), null, 'bad\nname']) assert.throws(() => store.nameBuddy(name));
+  store.nameBuddy('  Miso  ');
+  const reopened = new Store(file).snapshot();
+  assert.equal(reopened.settings.hatched, true);
+  assert.equal(reopened.settings.buddyName, 'Miso');
+  assert.equal(reopened.days[localDay(new Date())][0].amount, 3);
+  store.nameBuddy('Pip');
+  assert.equal(new Store(file).snapshot().settings.buddyName, 'Pip');
+  assert.equal(store.snapshot().habits[0].id, habit.id);
+});
+
+test('existing data gains the one-time welcome without losing progress or appearance', t => {
+  const { store, file } = setup(t);
+  const habit = store.addHabit({ name: 'Read', type: 'minutes', goal: 15 });
+  store.logProgress(habit.id, 10);
+  store.updateSettings({ avatar: 'star', palette: 'lavender' });
+  const old = store.snapshot(); delete old.settings.hatched; delete old.settings.buddyName;
+  fs.writeFileSync(file, JSON.stringify(old));
+  const reopened = new Store(file);
+  assert.equal(reopened.snapshot().settings.hatched, false);
+  reopened.nameBuddy('Stella');
+  assert.equal(reopened.snapshot().settings.avatar, 'star');
+  assert.equal(reopened.snapshot().settings.palette, 'lavender');
+  assert.equal(reopened.snapshot().days[localDay(new Date())][0].amount, 10);
+});
+
 test('starts empty, persists settings, and returns independent snapshots', t => {
   const { store, file } = setup(t);
   assert.deepEqual(store.snapshot().habits, []);
@@ -23,6 +54,14 @@ test('starts empty, persists settings, and returns independent snapshots', t => 
   copy.habits.push({});
   assert.equal(store.snapshot().habits.length, 0);
   assert.deepEqual(new Store(file).snapshot(), store.snapshot());
+});
+
+test('new users start at the largest size and later launches keep their chosen size', t => {
+  const { store, file } = setup(t);
+  assert.equal(store.snapshot().settings.avatarSize, 160);
+  store.updateSettings({ avatarSize: 92 });
+  store.nameBuddy('Miso');
+  assert.equal(new Store(file).snapshot().settings.avatarSize, 92);
 });
 
 test('logs supported types, caps count goals, and signals completion once', t => {

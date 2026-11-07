@@ -19,7 +19,7 @@ function validateReminder(reminder) {
 function initialState() {
   return {
     version: 1,
-    settings: { avatarPosition: null, avatarSize: 68, remindersPaused: false, dayStartHour: 0, avatar: 'plant', palette: 'sage', accent: null },
+    settings: { avatarPosition: null, avatarSize: 160, remindersPaused: false, dayStartHour: 0, avatar: 'plant', palette: 'sage', accent: null, buddyName: '', hatched: false },
     habits: [],
     days: {},
     reminderDeliveries: {},
@@ -50,6 +50,7 @@ function validateState(state) {
   if (!['plant', 'pineapple', 'star'].includes(state.settings.avatar) || !['sage', 'lavender', 'peach', 'ocean'].includes(state.settings.palette) ||
       (state.settings.accent !== null && !/^#[0-9a-f]{6}$/i.test(state.settings.accent))) throw new Error('Invalid appearance settings.');
   state.habits.forEach(validateHabit);
+  if (typeof state.settings.hatched !== 'boolean' || typeof state.settings.buddyName !== 'string' || state.settings.buddyName.length > 24 || (state.settings.hatched && !state.settings.buddyName.trim())) throw new Error('Give your buddy a name of up to 24 characters.');
   if (!state.thoughts || !Array.isArray(state.thoughts.usedIds) || state.thoughts.usedIds.some(id => typeof id !== 'string') || (state.thoughts.lastType !== null && typeof state.thoughts.lastType !== 'string') || !Number.isFinite(state.thoughts.nextAt) || state.thoughts.nextAt < 0) throw new Error('Invalid buddy thought history.');
   if (state.thoughts.day !== null && !/^\d{4}-\d{2}-\d{2}$/.test(state.thoughts.day)) throw new Error('Invalid buddy thought day.');
   if (!state.reminderDeliveries || typeof state.reminderDeliveries !== 'object' || Array.isArray(state.reminderDeliveries) || Object.values(state.reminderDeliveries).some(value => typeof value !== 'string')) throw new Error('Invalid reminder history.');
@@ -126,6 +127,11 @@ class Store {
     const next = this.snapshot();
     Object.assign(next.settings, patch);
     return this.commit(next);
+  }
+
+  nameBuddy(name) {
+    if (typeof name !== 'string' || !name.trim() || name.trim().length > 24 || /[\u0000-\u001f\u007f]/.test(name)) throw new Error('Give your buddy a name of up to 24 characters.');
+    return this.updateSettings({ buddyName: name.trim(), hatched: true });
   }
 
   syncToday(next) {

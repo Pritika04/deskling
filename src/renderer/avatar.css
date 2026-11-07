@@ -10,6 +10,24 @@ body[data-avatar="plant"] .plant, body[data-avatar="pineapple"] .pineapple, body
 .plant > path:first-child { fill: var(--soft); }
 .plant > path:last-child { fill: var(--accent); }
 #character { transform-origin: 50px 52px; }
+#egg { display: none; transform-origin: 50px 85px; }
+.egg-crack { opacity: 0; }
+body[data-state="egg"] #character, body[data-state="hatching"] #character { display: none; }
+body[data-state="egg"] #egg, body[data-state="hatching"] #egg { display: inline; }
+body[data-state="egg"] #egg { animation: egg-rock 5s ease-in-out infinite; }
+body[data-state="hatching"] #egg { animation: egg-rock .2s ease-in-out 6; }
+body[data-state="hatching"] .egg-crack { opacity: 1; }
+@keyframes egg-rock { 0%, 65%, 100% { transform: rotate(0); } 75% { transform: rotate(-7deg); } 85% { transform: rotate(7deg); } 95% { transform: rotate(-3deg); } }
+.affection-hearts { display: none; }
+body[data-state="cuddle"] .affection-hearts, body[data-state="boop"] .affection-hearts { display: inline; animation: affection-float 2.2s ease-out both; }
+body[data-state="cuddle"] .eye, body[data-state="boop"] .eye, body[data-state="wiggle"] .eye { display: none; }
+body[data-state="cuddle"] .happy-eyes, body[data-state="boop"] .happy-eyes, body[data-state="wiggle"] .happy-eyes { display: inline; }
+body[data-state="cuddle"] #character { animation: cuddle 1s ease-in-out 2; }
+body[data-state="boop"] #character { animation: hop .6s ease-in-out 2; }
+body[data-state="wiggle"] #character { animation: wiggle .45s ease-in-out 4; }
+@keyframes affection-float { from { opacity: 0; transform: translateY(8px); } 25%, 70% { opacity: 1; } to { opacity: 0; transform: translateY(-6px); } }
+@keyframes cuddle { 50% { transform: scale(1.04, .95) rotate(-3deg); } }
+@keyframes wiggle { 25% { transform: rotate(-7deg); } 75% { transform: rotate(7deg); } }
 #gift { display: none; transform-origin: 52px 85px; }
 .gift-paper { fill: var(--soft); stroke: var(--accent); }
 .gift-ribbon { fill: var(--accent); }
@@ -48,6 +66,7 @@ body[data-state="wink"] .eye-right { animation: blink 450ms ease-in-out 2; }
 .resize-edge { position: absolute; left: 25%; width: 50%; height: 10px; cursor: ns-resize; touch-action: none; user-select: none; }
 .resize-edge.top { top: 0; }
 .resize-edge.bottom { bottom: 0; }
+body[data-state="gift"] .resize-edge { display: none; }
 .resize-edge::after { content: ''; position: absolute; top: 4px; left: calc(50% - 8px); width: 16px; height: 2px; border-radius: 2px; background: #70896a; opacity: 0; }
 body:hover .resize-edge::after, .resize-edge:focus-visible::after, body.resizing .resize-edge::after { opacity: .65; }
 .resize-edge:focus-visible { outline: 1px dashed #70896a; border-radius: 5px; }

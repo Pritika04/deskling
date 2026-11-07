@@ -2,20 +2,34 @@
 const canvas = document.querySelector('#confetti');
 const context = canvas.getContext('2d');
 const message = document.querySelector('#message');
+const tail = document.querySelector('#bubble-tail');
 let frame;
+let bubbleId;
+window.buddy.onBubblePosition(position => {
+  if (position.id !== bubbleId) return;
+  message.style.maxWidth = `${Math.min(250, Math.max(60, position.width - 24))}px`;
+  message.style.left = `${position.left}px`; message.style.top = `${position.top}px`;
+  const { a, b, tip } = position.tail;
+  const path = `M${a.x} ${a.y}L${tip.x} ${tip.y}L${b.x} ${b.y}`;
+  document.querySelector('#tail-fill').setAttribute('d', `${path}Z`);
+  document.querySelector('#tail-outline').setAttribute('d', path);
+  const width = message.offsetWidth + 24, height = message.offsetHeight + 24;
+  if (width !== position.width || height !== position.height) window.buddy.fitBubble({ id: bubbleId, width, height });
+});
 window.buddy.onReaction(reaction => {
   cancelAnimationFrame(frame);
   context.clearRect(0, 0, canvas.width, canvas.height);
   document.body.dataset.state = reaction.state;
   document.documentElement.style.setProperty('--accent', reaction.accent);
-  message.hidden = !['halfway', 'reminder', 'mystery'].includes(reaction.state);
-  message.textContent = reaction.state === 'halfway' ? "You're halfway there!" : ['reminder', 'mystery'].includes(reaction.state) ? reaction.message : '';
-  const left = Math.max(8, Math.min(canvas.width - message.offsetWidth - 8, reaction.x - message.offsetWidth / 2));
-  message.style.left = `${left}px`;
-  message.style.setProperty('--tail-left', `${Math.max(14, Math.min(message.offsetWidth - 24, reaction.x - left - 5))}px`);
-  const above = reaction.y - message.offsetHeight - 32;
-  message.dataset.below = above < 8;
-  message.style.top = `${Math.max(8, Math.min((reaction.height || canvas.height) - message.offsetHeight - 8, above >= 8 ? above : reaction.y + 32))}px`;
+  message.hidden = !reaction.bubble;
+  tail.toggleAttribute('hidden', !reaction.bubble);
+  message.textContent = reaction.bubble ? reaction.message : '';
+  message.style.left = '12px'; message.style.top = '12px';
+  message.style.maxWidth = '250px';
+  if (reaction.bubble) {
+    bubbleId = reaction.id;
+    window.buddy.fitBubble({ id: reaction.id, width: message.offsetWidth + 24, height: message.offsetHeight + 24 });
+  }
   if (reaction.state !== 'celebrate') return;
   const colors = [reaction.accent, '#d69165', '#9a79bc', '#dbb84d', '#5e9fa5'];
   const particles = Array.from({ length: 40 }, (_, index) => ({

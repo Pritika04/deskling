@@ -32,11 +32,14 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 - A small, transparent, frameless, always-on-top window, no taskbar or dock presence.
 - Default position: **bottom-left** of the primary display, placed using the screen's *work area* so it sits above the Windows taskbar or macOS dock.
 - Draggable to any position, with the position remembered.
+- A fresh install starts at the largest size (160). Once resized, the user's chosen size is saved across launches. Earned presents temporarily grow by 20% (up to 192), then restore the saved size when the reward is closed.
 - Click to open or close the popup window.
 - Tray icon (Windows system tray and macOS menu bar) with: Open, Pause reminders, Launch at login (toggle), Quit.
 
 ### 2. Avatars
-- Choices: **cat, pineapple, star, plant** (more can be added later).
+- Choices: **pineapple, star, plant** (more can be added later).
+- A one-time welcome starts as a small egg. Clicking makes it wobble and crack, reveals the buddy, and opens a dedicated naming view. A saved name completes the welcome; closing early lets the user resume later. Existing habits and history stay intact. Names can be changed in settings.
+- Hover briefly to pet the buddy, including while the habit menu is open; double-click for a random boop, cuddle, or wiggle. Single-click continues to open habits. Hover affection waits during celebrations or rewards. These interactions never log progress. The habit menu shows the buddy's name and is placed above, below, or beside the buddy without covering it.
 - Drawn as **SVG animated with CSS**, original artwork with no external licensing.
 - All avatars share one **face rig** (eyes, mouth, cheeks) so each reaction is built once and works on every avatar.
 - The plant avatar may optionally have growth stages tied to daily progress (seed, sprout, sapling, tree, tree with fruit).
@@ -46,6 +49,7 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 |---|---|
 | Idle | Slow blinks, occasional glance around |
 | Smile | Progress logged |
+| Halfway encouragement | First reaching halfway through a habit that day; rotate short phrases such as “Keep it going!” and “Way to go!” without repeating the previous phrase |
 | Laugh + confetti | A habit completed |
 | Wink | Streak milestone |
 | Sleepy | Late at night, or an untouched day |
@@ -68,6 +72,7 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 
 ### 6. Reminders
 - Gentle speech bubbles from the floating buddy, with cute wording and occasional emoji. They do not open the habit menu or steal focus.
+- Keep bubble text clear of the pet and visible habit menu, including at the largest pet/present sizes and near monitor edges. Use a short eight-pixel triangle aimed toward the mouth with a visible gap from the pet. Choose a nearby position by the distance to the mouth; the triangle must not cross the menu. Reposition when the menu resizes; wrap into a narrower bubble or shorten the menu into a scrolling view when needed to keep speech nearby. Bubbles dismiss automatically after three seconds. Leave room for the tail and shadow.
 - Per habit, either at fixed times (e.g. 11:00) or repeating (e.g. every 2 hours between set hours).
 - Global "Pause reminders" option.
 - Never notify for a habit that is already complete for the day.
@@ -83,6 +88,7 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 - When all habits are complete, the avatar transforms into a gift/mystery box.
 - Finish the final habit without reopening the habit menu. A golden, gently bouncing present invites a click. Opening it shows a dedicated reward view with no habits or settings competing for attention.
 - Each earned box opens once, with the claim remembered across restarts. The present stays while the reward is open; closing the reward brings the chosen buddy back as a desktop pet.
+- After closing a reward, the buddy shares a randomized morning, afternoon, evening, or sleepy-night message based on the computer's local time, avoiding the previous message.
 - Adding a new habit after opening a box allows another box once all current habits, including the new one, are complete. Editing, correcting, or removing an already rewarded habit does not reopen a claimed box.
 - A new day starts fresh: completing that day's habits can earn a new box.
 - Reward content lives in `content/mystery.json`: quotes, motivation, and encouraging end-of-day notes, bundled offline.

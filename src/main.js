@@ -8,6 +8,8 @@ const makeTrayIcon = require('./tray-icon');
 const { startReminders } = require('./reminders');
 const { formatSurprise } = require('./mystery');
 const { startThoughts } = require('./thoughts');
+const { popupPosition, bubbleWithMenu, mouthPoint } = require('./popup-position');
+const { chooseGreeting, giftSize, chooseEncouragement, encouragements } = require('./greetings');
 
 let avatar, popup, effects, tray, store, drag, resize;
 let quitting = false;
@@ -15,8 +17,17 @@ let rolling = null;
 let stopReminders;
 let stopThoughts;
 let rewardOpen = false;
+let hatchTimer;
+let hatching = false;
+let affectionAt = 0;
 let reducedMotion = false;
 let effectsTimer;
+let effectId = 0;
+let lastGreeting = '';
+let lastEncouragement = '';
+let bubbleSize = null;
+let presentationTimer;
+let celebrating = false;
 let effectState = null;
 let celebrationTimer;
 let reopenAfterCelebration = false;
@@ -37,14 +48,37 @@ function clampPosition(position, width, height) {
 function positionPopup() {
   const bounds = avatar.getBounds();
   const area = screen.getDisplayMatching(bounds).workArea;
-  const width = Math.min(POPUP_WIDTH, area.width - 16);
-  const height = Math.min(popupHeight, area.height - 16);
-  const above = bounds.y - height - 8;
-  const position = clampPosition({ x: bounds.x, y: above >= area.y ? above : bounds.y + bounds.height + 8 }, width, height);
-  popup.setBounds({ ...position, width, height });
+  popup.setBounds(popupPosition(bounds, area, { width: POPUP_WIDTH, height: popupHeight }));
+  if (bubbleSize && effectState) positionBubble(bubbleSize);
 }
 
-function placeAvatar(position, size = store.snapshot().settings.avatarSize) {
+function positionBubble(data) {
+  const pet = avatar.getBounds();
+  const isGift = rewardOpen || (!celebrating && mysteryStatus(store.snapshot()).available);
+  const layout = bubbleWithMenu(pet, screen.getDisplayMatching(pet).workArea, data, popup.isVisible() ? popup.getBounds() : null, mouthPoint(pet, isGift ? .74 : .65));
+  if (!layout) { effects.hide(); return; }
+  if (layout.menu && popup.isVisible()) popup.setBounds(layout.menu);
+  const { bubble, frame, tail } = layout;
+  effects.setBounds(frame);
+  const local = point => ({ x: point.x - frame.x, y: point.y - frame.y });
+  effects.webContents.send('bubble:position', { id: effectId, width: bubble.width, height: bubble.height, left: bubble.x - frame.x + 12, top: bubble.y - frame.y + 12, tail: { a: local(tail.a), b: local(tail.b), tip: local(tail.tip) } });
+  effects.showInactive();
+}
+
+function displayAvatarSize() {
+  const state = store.snapshot();
+  return state.settings.hatched && (rewardOpen || (!celebrating && mysteryStatus(state).available)) ? giftSize(state.settings.avatarSize) : state.settings.avatarSize;
+}
+
+function syncAvatarSize() {
+  if (!avatar || avatar.isDestroyed() || resize || rolling || drag) return;
+  const bounds = avatar.getBounds(), size = displayAvatarSize();
+  if (Math.abs(bounds.width - size) <= 1 && Math.abs(bounds.height - size) <= 1) return;
+  placeAvatar({ x: bounds.x + Math.round((bounds.width - size) / 2), y: bounds.y + bounds.height - size }, size);
+  if (popup?.isVisible()) positionPopup();
+}
+
+function placeAvatar(position, size = displayAvatarSize()) {
   const next = clampPosition(position, size, size);
   // Supply the intended dimensions on every move. On Windows, repeated
   // setPosition calls can accumulate DPI rounding and grow the window.
@@ -62,18 +96,38 @@ function previewResize(cursor) {
 }
 
 function showPopup() {
-  closeReward();
+  if (!store.snapshot().settings.hatched && !hatching) { hatchBuddy(); return; }
+  closeReward(false);
   cancelCelebration();
   hideEffects();
   stopRoll();
+  syncAvatarSize();
   positionPopup();
   popup.webContents.send('state:changed', store.snapshot());
   popup.show();
   popup.focus();
 }
 
+function hatchBuddy() {
+  if (hatching) return;
+  hatching = true;
+  hideEffects(); popup.hide();
+  avatar.webContents.send('avatar:reaction', { state: 'hatching', hold: true });
+  hatchTimer = setTimeout(() => {
+    avatar.webContents.send('avatar:reaction', { state: 'smile', hold: true });
+    showPopup();
+  }, reducedMotion ? 50 : 1250);
+}
+
+function cancelHatching() {
+  if (!hatching) return;
+  clearTimeout(hatchTimer); hatching = false;
+  avatar.webContents.send('avatar:reaction', { state: 'idle' });
+}
+
 function cancelCelebration() {
   clearTimeout(celebrationTimer);
+  celebrating = false;
   reopenAfterCelebration = false;
 }
 
@@ -111,7 +165,7 @@ function reactToProgress(result, random = Math.random) {
   const reopen = popup.isVisible() || reopenAfterCelebration;
   cancelCelebration();
   hideEffects();
-  stopRoll(); broadcast();
+  stopRoll(); celebrating = !!result.completed; broadcast();
   const streak = summary(result.state).current;
   const followUp = result.completed && result.allComplete && [3, 7, 14, 30, 60, 100].includes(streak) ? 'wink' : null;
   if (result.completed) {
@@ -123,6 +177,7 @@ function reactToProgress(result, random = Math.random) {
     celebrationTimer = setTimeout(() => {
       const restore = reopenAfterCelebration;
       cancelCelebration(); hideEffects(); stopRoll();
+      syncAvatarSize();
       if (restore && !quitting) showPopup();
       else if (!quitting && result.allComplete && mysteryStatus(store.snapshot()).available) {
         avatar.webContents.send('avatar:reaction', { state: 'idle' });
@@ -133,34 +188,44 @@ function reactToProgress(result, random = Math.random) {
   }
   const state = result.completed ? 'celebrate' : result.halfway ? 'halfway' : 'smile';
   avatar.webContents.send('avatar:reaction', { state, followUp });
-  if (result.completed || result.halfway) showEffects(state, result.halfway && !result.completed ? "You're halfway there!" : '');
+  if (result.halfway && !result.completed) {
+    lastEncouragement = chooseEncouragement(lastEncouragement);
+    showEffects('halfway', lastEncouragement);
+  }
 }
 
 function hideEffects() {
   clearTimeout(effectsTimer);
+  effectId++;
   effectState = null;
+  bubbleSize = null;
   if (effects && !effects.isDestroyed()) effects.hide();
 }
 
 function showEffects(state, message) {
   clearTimeout(effectsTimer);
+  const id = ++effectId;
   effectState = state;
+  bubbleSize = null;
+  const bubble = ['halfway', 'reminder', 'mystery', 'greeting'].includes(state);
+  if (bubble) effects.hide();
   const bounds = avatar.getBounds();
   const height = state === 'mystery' ? 300 : 220;
   const position = clampPosition({ x: bounds.x + bounds.width / 2 - 160, y: bounds.y + bounds.height - height }, 320, height);
   effects.setBounds({ ...position, width: 320, height });
   effects.webContents.send('avatar:reaction', {
-    state, message, reducedMotion, height,
+    id, bubble, state, message, reducedMotion, height,
     x: bounds.x + bounds.width / 2 - position.x,
     y: bounds.y + bounds.height / 2 - position.y,
     accent: store.snapshot().settings.accent || { sage: '#789568', lavender: '#9582b4', peach: '#c58c70', ocean: '#67989f' }[store.snapshot().settings.palette],
   });
-  effects.showInactive();
-  effectsTimer = setTimeout(hideEffects, state === 'mystery' ? Math.max(12000, Math.min(22000, message.length * 75)) : state === 'reminder' ? 10000 : state === 'halfway' ? 3300 : state === 'roll' ? 4200 : 3000);
+  if (!bubble) effects.showInactive();
+  effectsTimer = setTimeout(hideEffects, state === 'roll' ? 4200 : 3000);
 }
 
 function showReminder(habit) {
-  if (quitting || rolling || drag || resize || reopenAfterCelebration || popup.isVisible() || effects.isVisible() || effects.webContents.isLoading()) return false;
+  if (!store.snapshot().settings.hatched) return false;
+  if (quitting || rolling || drag || resize || reopenAfterCelebration || popup.isVisible() || effectState || effects.webContents.isLoading()) return false;
   const wording = /water|hydrat/i.test(habit.name) ? 'A little water break? Whenever you feel ready. 💧' : `A little moment for ${habit.name}? Whenever you're ready. 🌱`;
   avatar.webContents.send('avatar:reaction', { state: 'smile' });
   showEffects('reminder', wording);
@@ -168,26 +233,35 @@ function showReminder(habit) {
 }
 
 function openMystery() {
+  if (!store.snapshot().settings.hatched) return { opened: false, state: store.snapshot() };
   const reward = store.openMystery();
   if (!reward.opened) return reward;
   cancelCelebration(); hideEffects(); stopRoll(); popup.hide(); broadcast();
   rewardOpen = true;
+  syncAvatarSize();
   avatar.webContents.send('avatar:reaction', { state: 'gift', hold: true });
   popup.webContents.send('mystery:reveal', reward.item);
   positionPopup(); popup.show(); popup.focus();
   return reward;
 }
 
-function closeReward() {
+function closeReward(greet = true) {
   if (!rewardOpen) return;
   rewardOpen = false;
+  syncAvatarSize();
   popup.hide();
   popup.webContents.send('mystery:reveal', null);
   avatar.webContents.send('avatar:reaction', { state: 'idle' });
+  if (greet && !quitting) {
+    const greeting = chooseGreeting(new Date(), lastGreeting);
+    lastGreeting = greeting.text;
+    showEffects('greeting', greeting.text);
+  }
 }
 
 function showThought(item, checkOnly = false) {
-  if (quitting || rewardOpen || rolling || drag || resize || reopenAfterCelebration || popup.isVisible() || effects.isVisible() || effects.webContents.isLoading() || mysteryStatus(store.snapshot()).available) return false;
+  if (!store.snapshot().settings.hatched) return false;
+  if (quitting || rewardOpen || rolling || drag || resize || reopenAfterCelebration || popup.isVisible() || effectState || effects.webContents.isLoading() || mysteryStatus(store.snapshot()).available) return false;
   if (!checkOnly) {
     avatar.webContents.send('avatar:reaction', { state: 'smile' });
     showEffects('mystery', formatSurprise(item));
@@ -196,6 +270,7 @@ function showThought(item, checkOnly = false) {
 }
 
 function broadcast() {
+  syncAvatarSize();
   for (const window of [avatar, popup]) {
     if (window && !window.isDestroyed()) window.webContents.send('state:changed', store.snapshot());
   }
@@ -230,7 +305,11 @@ function createWindow(options, page) {
   window.webContents.on('will-navigate', event => event.preventDefault());
   window.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   window.on('close', event => {
-    if (!quitting) { event.preventDefault(); window.hide(); }
+    if (!quitting) {
+      event.preventDefault();
+      if (window === popup) { cancelHatching(); closeReward(); }
+      window.hide();
+    }
   });
   window.loadFile(path.join(__dirname, 'renderer', page)).catch(error => {
     console.error(error);
@@ -241,6 +320,11 @@ function createWindow(options, page) {
 
 function registerIpc() {
   const trusted = event => [avatar, popup].some(window => window && event.sender === window.webContents && event.senderFrame === window.webContents.mainFrame);
+  ipcMain.on('effects:fit', (event, data) => {
+    if (event.sender !== effects.webContents || event.senderFrame !== effects.webContents.mainFrame || !effectState || data?.id !== effectId || !Number.isFinite(data.width) || !Number.isFinite(data.height)) return;
+    bubbleSize = { width: Math.max(40, Math.min(320, Math.ceil(data.width))), height: Math.max(40, Math.min(600, Math.ceil(data.height))) };
+    positionBubble(bubbleSize);
+  });
   ipcMain.handle('state:get', event => {
     if (!trusted(event)) throw new Error('Unknown window.');
     return store.snapshot();
@@ -248,6 +332,22 @@ function registerIpc() {
   ipcMain.handle('mystery:open', event => {
     if (!trusted(event)) throw new Error('Unknown window.');
     return openMystery();
+  });
+  ipcMain.handle('buddy:name', (event, name) => {
+    if (!trusted(event)) throw new Error('Unknown window.');
+    const next = store.nameBuddy(name);
+    cancelHatching(); broadcast();
+    return next;
+  });
+  ipcMain.handle('avatar:affection', (event, kind) => {
+    if (!trusted(event) || event.sender !== avatar.webContents) return false;
+    if (!['pet', 'play'].includes(kind)) return false;
+    if (!store.snapshot().settings.hatched || rewardOpen || rolling || drag || resize || reopenAfterCelebration || effects.isVisible() || mysteryStatus(store.snapshot()).available || Date.now() - affectionAt < 2500) return false;
+    affectionAt = Date.now();
+    if (kind === 'play') popup.hide();
+    const states = ['boop', 'cuddle', 'wiggle'];
+    avatar.webContents.send('avatar:reaction', { state: states[Math.floor(Math.random() * states.length)] });
+    return true;
   });
   ipcMain.on('popup:fit', (event, height) => {
     if (event.sender !== popup.webContents || !Number.isFinite(height)) return;
@@ -295,8 +395,7 @@ function registerIpc() {
     if (!trusted(event)) throw new Error('Unknown window.');
     stopRoll();
     store.updateSettings({ avatarSize: size });
-    const bounds = avatar.getBounds();
-    placeAvatar({ x: bounds.x, y: bounds.y + bounds.height - size });
+    syncAvatarSize();
     savePosition();
     if (popup.isVisible()) positionPopup();
     broadcast();
@@ -328,22 +427,25 @@ function registerIpc() {
   });
   ipcMain.on('popup:toggle', event => {
     if (!trusted(event)) return;
+    if (!store.snapshot().settings.hatched) { if (popup.isVisible()) { cancelHatching(); popup.hide(); } else showPopup(); return; }
     if (rewardOpen) { closeReward(); return; }
     if (event.sender === avatar.webContents && mysteryStatus(store.snapshot()).available) {
       try { openMystery(); } catch (error) { dialog.showErrorBox('Your surprise is safe', error.message); }
     } else popup.isVisible() ? popup.hide() : showPopup();
   });
-  ipcMain.on('popup:close', event => { if (trusted(event)) { closeReward(); cancelCelebration(); hideEffects(); stopRoll(); popup.hide(); } });
+  ipcMain.on('popup:close', event => { if (trusted(event)) { cancelHatching(); cancelCelebration(); hideEffects(); stopRoll(); popup.hide(); closeReward(); } });
   ipcMain.on('avatar:drag', (event, phase) => {
     if (event.sender !== avatar.webContents) return;
     if (phase === 'start') {
       cancelCelebration();
       hideEffects();
       stopRoll();
+      syncAvatarSize();
       resize = null;
       drag = { cursor: screen.getCursorScreenPoint(), origin: avatar.getPosition() };
     } else if (phase === 'move' && drag) {
-      closeReward();
+      cancelHatching();
+      closeReward(false);
       popup.hide();
       const cursor = screen.getCursorScreenPoint();
       placeAvatar({ x: drag.origin[0] + cursor.x - drag.cursor.x, y: drag.origin[1] + cursor.y - drag.cursor.y });
@@ -364,7 +466,7 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => { if (popup) showPopup(); });
-  app.on('before-quit', () => { quitting = true; cancelCelebration(); hideEffects(); stopRoll(); if (stopReminders) stopReminders(); if (stopThoughts) stopThoughts(); });
+  app.on('before-quit', () => { quitting = true; clearInterval(presentationTimer); clearTimeout(hatchTimer); cancelCelebration(); hideEffects(); stopRoll(); if (stopReminders) stopReminders(); if (stopThoughts) stopThoughts(); });
   app.on('window-all-closed', () => {});
   app.on('activate', () => { if (popup) showPopup(); });
   app.whenReady().then(async () => {
@@ -380,12 +482,13 @@ if (!app.requestSingleInstanceLock()) {
     effects = createWindow({ width: 320, height: 220, transparent: true, thickFrame: false, hasShadow: false, focusable: false, title: 'A little celebration' }, 'effects.html');
     effects.setIgnoreMouseEvents(true);
     registerIpc();
-    avatar.once('ready-to-show', () => avatar.showInactive());
+    avatar.once('ready-to-show', () => { syncAvatarSize(); avatar.showInactive(); });
+    presentationTimer = setInterval(syncAvatarSize, 30000);
     popup.on('blur', () => {
       // Leave avatar clicks to the toggle handler, avoiding hide-then-reopen.
       const cursor = screen.getCursorScreenPoint();
       const bounds = avatar.getBounds();
-      if (cursor.x < bounds.x || cursor.x >= bounds.x + bounds.width || cursor.y < bounds.y || cursor.y >= bounds.y + bounds.height) { closeReward(); popup.hide(); }
+      if (cursor.x < bounds.x || cursor.x >= bounds.x + bounds.width || cursor.y < bounds.y || cursor.y >= bounds.y + bounds.height) { cancelHatching(); closeReward(); popup.hide(); }
     });
     const icon = makeTrayIcon(nativeImage);
     if (process.platform === 'darwin') icon.setTemplateImage(true);
@@ -410,7 +513,50 @@ if (!app.requestSingleInstanceLock()) {
         if (result.version !== 1 || result.habits.length !== 0) throw new Error('Smoke test state mismatch.');
         if (await window.webContents.executeJavaScript('document.body.dataset.ready') !== 'true') throw new Error('Renderer did not initialize.');
       }
+      const shellDeadline = Date.now() + 5000;
+      while (!avatar.isVisible() && Date.now() < shellDeadline) await new Promise(resolve => setTimeout(resolve, 25));
       if (icon.isEmpty() || !avatar.isAlwaysOnTop() || !avatar.isVisible()) throw new Error('Desktop shell did not initialize.');
+      if (store.snapshot().settings.avatarSize !== 160 || Math.abs(avatar.getBounds().width - 160) > 1) throw new Error('First launch must use the largest buddy size');
+      const onboardingFs = require('node:fs');
+      const onboardingCaptures = path.join(__dirname, '..', '.npm');
+      onboardingFs.mkdirSync(onboardingCaptures, { recursive: true });
+      if (await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'egg') throw new Error('First launch must start with an egg');
+      onboardingFs.writeFileSync(path.join(onboardingCaptures, 'egg-preview.png'), (await avatar.webContents.capturePage()).toPNG());
+      await avatar.webContents.executeJavaScript("document.querySelector('#buddy').click()");
+      await avatar.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 1400))');
+      if (!popup.isVisible() || await popup.webContents.executeJavaScript("document.querySelector('#welcome').hidden")) throw new Error('Hatching must open the naming view');
+      onboardingFs.writeFileSync(path.join(onboardingCaptures, 'welcome-preview.png'), (await popup.webContents.capturePage()).toPNG());
+      await popup.webContents.executeJavaScript("document.querySelector('#buddy-name').value = 'Miso'; document.querySelector('#name-form').requestSubmit()");
+      await avatar.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 100))');
+      if (!new Store(store.filePath).snapshot().settings.hatched || store.snapshot().settings.buddyName !== 'Miso') throw new Error('Buddy name and hatch must persist');
+      if (await popup.webContents.executeJavaScript("document.querySelector('#today').hidden")) throw new Error('Naming must show habits');
+      if (await popup.webContents.executeJavaScript("document.querySelector('#home-title').textContent") !== 'Miso’s little space.') throw new Error('Named buddy must appear in the menu');
+      showPopup();
+      affectionAt = 0;
+      await avatar.webContents.executeJavaScript("lastPet = 0; react({ state: 'idle' }); document.querySelector('#buddy').dispatchEvent(new PointerEvent('pointerenter'))");
+      await avatar.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 650))');
+      if (!popup.isVisible() || !['boop', 'cuddle', 'wiggle'].includes(await avatar.webContents.executeJavaScript('document.body.dataset.state'))) throw new Error('Hover must pet the buddy while keeping the menu open');
+      await avatar.webContents.executeJavaScript("document.querySelector('#buddy').dispatchEvent(new PointerEvent('pointerleave'))");
+      affectionAt = 0;
+      await avatar.webContents.executeJavaScript(`(() => {
+        const buddy = document.querySelector('#buddy');
+        buddy.dispatchEvent(new MouseEvent('click', { detail: 1 }));
+        buddy.dispatchEvent(new MouseEvent('click', { detail: 2 }));
+        buddy.dispatchEvent(new MouseEvent('dblclick', { detail: 2 }));
+      })()`);
+      await avatar.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 400))');
+      if (popup.isVisible() || !['boop', 'cuddle', 'wiggle'].includes(await avatar.webContents.executeJavaScript('document.body.dataset.state'))) throw new Error('Double-click must give affection without opening habits');
+      onboardingFs.writeFileSync(path.join(onboardingCaptures, 'affection-preview.png'), (await avatar.webContents.capturePage()).toPNG());
+      await avatar.webContents.executeJavaScript("document.querySelector('#buddy').dispatchEvent(new MouseEvent('click', { detail: 1 }))");
+      await avatar.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 350))');
+      if (!popup.isVisible()) throw new Error('Single click must still open habits');
+      const layoutOrigin = avatar.getBounds();
+      const layoutArea = screen.getDisplayMatching(layoutOrigin).workArea;
+      placeAvatar({ x: layoutArea.x + Math.round(layoutArea.width / 2), y: layoutArea.y + Math.round(layoutArea.height / 2) });
+      popupHeight = 620; positionPopup();
+      const petBounds = avatar.getBounds(), menuBounds = popup.getBounds();
+      if (menuBounds.x < petBounds.x + petBounds.width && menuBounds.x + menuBounds.width > petBounds.x && menuBounds.y < petBounds.y + petBounds.height && menuBounds.y + menuBounds.height > petBounds.y) throw new Error('Tall menu must never cover the pet');
+      placeAvatar({ x: layoutOrigin.x, y: layoutOrigin.y }); positionPopup();
       await popup.webContents.executeJavaScript('window.buddy.resizeAvatar(80)');
       const start = avatar.getBounds();
       for (let index = 0; index < 80; index++) placeAvatar({ x: start.x + index % 2, y: start.y });
@@ -418,6 +564,25 @@ if (!app.requestSingleInstanceLock()) {
       if (Math.abs(end.width - 80) > 1 || Math.abs(end.height - 80) > 1) throw new Error(`Buddy size drifted: ${JSON.stringify(end)}`);
       if (new Store(store.filePath).snapshot().settings.avatarSize !== 80) throw new Error('Buddy size was not saved.');
       await popup.webContents.executeJavaScript('window.buddy.resizeAvatar(68)');
+      const bubbleOrigin = avatar.getBounds();
+      const bubbleArea = screen.getDisplayMatching(bubbleOrigin).workArea;
+      for (const size of [68, 160, 192]) for (const [xRatio, yRatio] of [[0, 0], [.5, .5], [1, 1]]) for (const state of ['halfway', 'reminder', 'mystery', 'greeting']) {
+        placeAvatar({ x: bubbleArea.x + Math.round((bubbleArea.width - size) * xRatio), y: bubbleArea.y + Math.round((bubbleArea.height - size) * yRatio) }, size);
+        positionPopup();
+        showEffects(state, state === 'mystery' ? 'A little thought for your day. Take a breath, stretch your shoulders, and enjoy a moment of company.' : 'You earned a little surprise. Click to unwrap ✨');
+        await new Promise(resolve => setTimeout(resolve, 150));
+        const pet = avatar.getBounds(), frame = effects.getBounds();
+        const body = await effects.webContents.executeJavaScript("(() => { const r = document.querySelector('#message').getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; })()");
+        const bubble = { ...body, x: frame.x + body.x, y: frame.y + body.y };
+        if (!effects.isVisible() || (bubble.x < pet.x + pet.width && bubble.x + bubble.width > pet.x && bubble.y < pet.y + pet.height && bubble.y + bubble.height > pet.y)) throw new Error(`Bubble text overlaps pet: ${JSON.stringify({ size, state, pet, bubble })}`);
+        const arrow = await effects.webContents.executeJavaScript("document.querySelector('#tail-fill').getAttribute('d').match(/-?\\d+(?:\\.\\d+)?/g).map(Number)");
+        if (Math.abs(Math.hypot(arrow[2] - (arrow[0] + arrow[4]) / 2, arrow[3] - (arrow[1] + arrow[5]) / 2) - 8) > 1) throw new Error('Bubble arrow must stay short at every pet size');
+        const tip = { x: frame.x + arrow[2], y: frame.y + arrow[3] };
+        if (tip.x > pet.x - 3 && tip.x < pet.x + pet.width + 3 && tip.y > pet.y - 3 && tip.y < pet.y + pet.height + 3) throw new Error('Bubble arrow must leave a visible gap from the pet');
+        const clipped = await effects.webContents.executeJavaScript("(() => { const r = document.querySelector('#message').getBoundingClientRect(); return r.left < 0 || r.top < 0 || r.right > innerWidth || r.bottom > innerHeight; })()");
+        if (clipped) throw new Error('Bubble text must fit within the effects window');
+      }
+      hideEffects(); placeAvatar({ x: bubbleOrigin.x, y: bubbleOrigin.y }, 68);
       for (const edge of ['top', 'bottom']) {
         await avatar.webContents.executeJavaScript(`window.buddy.resizeDrag('start', '${edge}'); window.buddy.getState()`);
         const initialSize = resize.bounds.height;
@@ -576,7 +741,11 @@ if (!app.requestSingleInstanceLock()) {
       fs.writeFileSync(path.join(captureDir, 'popup-preview.png'), (await popup.webContents.capturePage()).toPNG());
       reactToProgress({ state: store.snapshot(), completed: false, halfway: true, allComplete: false });
       await effects.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 60))');
-      if (await effects.webContents.executeJavaScript("document.querySelector('#message').textContent") !== "You're halfway there!") throw new Error('Halfway speech bubble missing.');
+      if (!encouragements.includes(await effects.webContents.executeJavaScript("document.querySelector('#message').textContent"))) throw new Error('Random halfway encouragement missing.');
+      const halfwayFrame = effects.getBounds(), halfwayMenu = popup.getBounds();
+      const halfwayBody = await effects.webContents.executeJavaScript("(() => { const r = document.querySelector('#message').getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; })()");
+      const halfwayBubble = { ...halfwayBody, x: halfwayFrame.x + halfwayBody.x, y: halfwayFrame.y + halfwayBody.y };
+      if (!popup.isVisible() || (halfwayBubble.x < halfwayMenu.x + halfwayMenu.width && halfwayBubble.x + halfwayBubble.width > halfwayMenu.x && halfwayBubble.y < halfwayMenu.y + halfwayMenu.height && halfwayBubble.y + halfwayBubble.height > halfwayMenu.y)) throw new Error('Halfway bubble must stay clear of the open habit menu');
       if (await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'halfway') throw new Error('Halfway happy reaction missing.');
       fs.writeFileSync(path.join(captureDir, 'halfway-preview.png'), (await effects.webContents.capturePage()).toPNG());
       hideEffects();
@@ -602,11 +771,16 @@ if (!app.requestSingleInstanceLock()) {
       await popup.webContents.executeJavaScript(`(async () => {
         const water = [...document.querySelectorAll('.habit')].find(card => card.textContent.includes('Water'));
         if (water.querySelectorAll('.water-drops .count-slot').length !== 8) throw new Error('Water droplets missing');
-        water.querySelectorAll('.count-slot button, button.count-slot')[2].click();
-        const until = Date.now() + 5000;
-        while (document.querySelectorAll('.water-drops .is-filled').length !== 3) {
-          if (Date.now() > until) throw new Error('Droplet logging failed');
-          await new Promise(resolve => setTimeout(resolve, 25));
+        for (let expected = 1; expected <= 3; expected++) {
+          const current = [...document.querySelectorAll('.habit')].find(card => card.dataset.id === water.dataset.id);
+          current.querySelector('button.count-slot:last-child').click();
+          const until = Date.now() + 5000;
+          while (document.querySelectorAll('.water-drops .is-filled').length !== expected || busy) {
+            if (Date.now() > until) throw new Error('Each droplet click must add exactly one glass');
+            await new Promise(resolve => setTimeout(resolve, 25));
+          }
+          const recorded = HabitDomain.todayEntries(await window.buddy.getState()).find(entry => entry.id === water.dataset.id);
+          if (recorded.amount !== expected || recorded.amount >= recorded.goal || document.hidden) throw new Error('Clicking the last droplet must not complete water prematurely');
         }
         await window.buddy.addHabit({ name: 'Reading', type: 'count', goal: 30, unit: 'pages' });
         await new Promise(resolve => setTimeout(resolve, 50));
@@ -641,6 +815,9 @@ if (!app.requestSingleInstanceLock()) {
       await new Promise(resolve => setTimeout(resolve, 3300));
       if (popup.isVisible()) throw new Error('Menu reopened after the final habit');
       if (await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'gift') throw new Error('All habits complete should reveal the gift');
+      const preferredSize = store.snapshot().settings.avatarSize;
+      if (Math.abs(avatar.getBounds().width - giftSize(preferredSize)) > 1) throw new Error('Earned present must be temporarily bigger');
+      if (new Store(store.filePath).snapshot().settings.avatarSize !== preferredSize) throw new Error('Present must not overwrite preferred size');
       fs.writeFileSync(path.join(captureDir, 'gift-preview.png'), (await avatar.webContents.capturePage()).toPNG());
       await avatar.webContents.executeJavaScript("document.querySelector('#buddy').click()");
       await effects.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 120))');
@@ -657,6 +834,13 @@ if (!app.requestSingleInstanceLock()) {
       await popup.webContents.executeJavaScript("document.querySelector('#reward-close').click()");
       await avatar.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 80))');
       if (popup.isVisible() || await avatar.webContents.executeJavaScript('document.body.dataset.state') === 'gift') throw new Error('Closing the reward must bring the buddy back');
+      if (Math.abs(avatar.getBounds().width - preferredSize) > 1) throw new Error('Buddy must return to preferred size');
+      if (effectState !== 'greeting' || !effects.isVisible() || !(await effects.webContents.executeJavaScript("document.querySelector('#message').textContent"))) throw new Error('Reward close must show a time-of-day greeting');
+      await new Promise(resolve => setTimeout(resolve, 200));
+      fs.writeFileSync(path.join(captureDir, 'greeting-preview.png'), (await effects.webContents.capturePage()).toPNG());
+      await new Promise(resolve => setTimeout(resolve, 3050));
+      if (effects.isVisible() || effectState) throw new Error('Speech bubbles must dismiss after about three seconds');
+      hideEffects();
       const thought = require('./thoughts').pool.find(item => item.answer);
       if (!showThought(thought, true) || !showThought(thought)) throw new Error('Daytime thought should appear in a quiet moment');
       await effects.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 80))');
