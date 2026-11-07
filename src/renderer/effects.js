@@ -15,11 +15,13 @@ window.buddy.onBubblePosition(position => {
   document.querySelector('#tail-outline').setAttribute('d', path);
   const width = message.offsetWidth + 24, height = message.offsetHeight + 24;
   if (width !== position.width || height !== position.height) window.buddy.fitBubble({ id: bubbleId, width, height });
+  else document.body.dataset.placementId = String(position.id);
 });
 window.buddy.onReaction(reaction => {
   cancelAnimationFrame(frame);
   context.clearRect(0, 0, canvas.width, canvas.height);
   document.body.dataset.state = reaction.state;
+  document.body.dataset.placementId = '';
   document.documentElement.style.setProperty('--accent', reaction.accent);
   message.hidden = !reaction.bubble;
   tail.toggleAttribute('hidden', !reaction.bubble);

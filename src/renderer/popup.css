@@ -163,9 +163,10 @@ footer { display: flex; flex-shrink: 0; align-items: center; justify-content: ce
 #name-form .primary { border-radius: 22px; margin-top: 6px; }
 .name-label { font-size: 11px; color: var(--muted); }
 #name-error { min-height: 0; margin: 6px 0; }
-.rename-row { display: flex; align-items: end; gap: 10px; }
-.rename-row label { flex: 1; }
-.rename-row button { margin-bottom: 14px; }
+.rename-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+.rename-row label { min-width: 0; }
+.rename-row input { display: block; height: 34px; }
+.rename-row button { margin: 0; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
 .reward-eyebrow { font-size: 9px; letter-spacing: .18em; color: var(--accent); font-weight: 700; }
 .reward-art { position: relative; width: 154px; margin: 10px auto 0; border-radius: 50%; background: radial-gradient(ellipse, #eedfba88, transparent 70%); }
 .reward-art svg { width: 130px; height: 130px; filter: drop-shadow(3px 7px 0 #b4935018); }
@@ -182,6 +183,37 @@ footer { display: flex; flex-shrink: 0; align-items: center; justify-content: ce
 .reward-divider { color: #c8a35a; margin: 18px 0 8px; font-size: 13px; }
 .reward-signoff { font-size: 11px; color: var(--muted); margin: 0 0 20px; }
 #reward-close { border-radius: 22px; padding: 11px 22px; }
+.collection-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin: 10px 0 12px; }
+.collection-heading h1 { margin: 0; font-size: 24px; }
+.coin-balance { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; border: 1px solid #d8c89d; border-radius: 18px; padding: 5px 9px; color: #8b7445; background: #eee2c733; font-size: 11px; white-space: nowrap; }
+.coin-icon { display: inline-block; width: 18px; height: 18px; flex-shrink: 0; perspective: 80px; }
+.coin-icon svg { display: block; width: 100%; height: 100%; transform-origin: center; animation: coin-turn 4.5s ease-in-out infinite; filter: drop-shadow(1px 1px 0 #b5944f44); }
+@keyframes coin-turn { 0%, 55% { transform: rotateY(0); } 90%, 100% { transform: rotateY(360deg); } }
+@media (prefers-reduced-motion: reduce) { .coin-icon svg { animation: none; } }
+.collection-tabs { display: flex; gap: 4px; padding: 4px; border-radius: 18px; background: var(--cream); border: 1px solid #e5dfd2; }
+.collection-tabs button { flex: 1; border: 0; border-radius: 14px; background: transparent; font-size: 12px; }
+.collection-tabs button[aria-pressed="true"] { background: var(--soft); }
+.collection-hero { text-align: center; padding: 8px 10px 16px; margin: 10px 0 16px; border-radius: 22px; background: color-mix(in srgb, var(--accent) 4%, var(--cream)); }
+#collection-preview { width: 130px; height: 130px; margin: 0 auto; }
+#collection-preview svg { width: 100%; height: 100%; }
+#try-on-caption { font-size: 11px; color: var(--muted); margin: 1px 0 10px; }
+#collection-action { font-size: 12px; padding: 8px 18px; border-radius: 20px; }
+#wardrobe-slots { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+#wardrobe-slots button { font-size: 10px; border-radius: 14px; padding: 6px 8px; }
+#wardrobe-slots button[aria-pressed="true"] { background: var(--soft); border-color: var(--accent); }
+.accessory-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.accessory-card { display: flex; flex-direction: column; align-items: center; min-width: 0; padding: 10px 8px; border-radius: 16px; background: var(--cream); }
+.accessory-card[aria-pressed="true"] { border-color: var(--accent); box-shadow: 3px 4px 0 color-mix(in srgb, var(--accent) 18%, transparent); }
+.accessory-card strong { font-size: 11px; font-weight: 600; }
+.accessory-card small { font-size: 10px; color: var(--muted); margin-top: 3px; }
+.accessory-art { width: 85px; height: 58px; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; }
+.accessory-art svg { width: 100%; height: 100%; }
+.nothing-art { height: 63px; display: grid; place-items: center; font: 28px Georgia, serif; color: var(--muted); }
+.wardrobe-empty { grid-column: 1 / -1; font-size: 11px; text-align: center; padding: 12px; }
+.coin-guide { margin-top: 20px; font-size: 11px; color: var(--muted); }
+.coin-guide summary { cursor: pointer; color: var(--ink); }
+.coin-guide p { margin: 10px 0; line-height: 1.8; }
+.reward-coins { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; color: var(--accent); margin: 14px 0 0; }
 #reward:not([hidden]) { animation: reward-arrive .45s ease-out; }
 @keyframes reward-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { #reward { animation: none !important; } }

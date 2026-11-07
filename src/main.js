@@ -8,6 +8,7 @@ const makeTrayIcon = require('./tray-icon');
 const { startReminders } = require('./reminders');
 const { formatSurprise } = require('./mystery');
 const { startThoughts } = require('./thoughts');
+const { runShopSmoke } = require('./smoke-shop');
 const { popupPosition, bubbleWithMenu, mouthPoint } = require('./popup-position');
 const { chooseGreeting, giftSize, chooseEncouragement, encouragements } = require('./greetings');
 
@@ -34,7 +35,8 @@ let reopenAfterCelebration = false;
 let popupHeight = 340;
 const POPUP_WIDTH = 380;
 const POPUP_HEIGHT = 620;
-const smokeTest = process.argv.includes('--smoke-test');
+const shopSmoke = process.argv.includes('--shop-test');
+const smokeTest = process.argv.includes('--smoke-test') || shopSmoke;
 if (smokeTest) app.setPath('userData', path.join(app.getPath('temp'), `habit-buddy-smoke-${require('node:crypto').randomUUID()}`));
 
 function clampPosition(position, width, height) {
@@ -375,6 +377,8 @@ function registerIpc() {
     'habit:edit': (id, data) => store.editHabit(id, data),
     'habit:archive': id => store.archiveHabit(id),
     'habit:reorder': ids => store.reorderHabits(ids),
+    'collection:buy': id => store.buyAccessory(id),
+    'collection:equip': outfit => store.equipOutfit(outfit),
     'settings:update': patch => {
       if (!patch || Object.keys(patch).some(key => !['avatar', 'palette', 'accent'].includes(key))) throw new Error('Unknown setting.');
       return store.updateSettings(patch);
@@ -473,6 +477,7 @@ if (!app.requestSingleInstanceLock()) {
     app.setAppUserModelId('com.habitbuddy.desktop');
     if (process.platform === 'darwin') app.dock.hide();
     store = new Store(path.join(app.getPath('userData'), 'habit-buddy.json'));
+    store.refreshRewards();
     const area = screen.getPrimaryDisplay().workArea;
     const saved = store.snapshot().settings.avatarPosition;
     const size = store.snapshot().settings.avatarSize;
@@ -483,8 +488,12 @@ if (!app.requestSingleInstanceLock()) {
     effects.setIgnoreMouseEvents(true);
     registerIpc();
     avatar.once('ready-to-show', () => { syncAvatarSize(); avatar.showInactive(); });
-    presentationTimer = setInterval(syncAvatarSize, 30000);
+    presentationTimer = setInterval(() => {
+      try { if (store.refreshRewards()) broadcast(); else syncAvatarSize(); }
+      catch (error) { console.error('Could not save buddy rewards:', error.message); }
+    }, 30000);
     popup.on('blur', () => {
+      if (popup.isFocused()) return;
       // Leave avatar clicks to the toggle handler, avoiding hide-then-reopen.
       const cursor = screen.getCursorScreenPoint();
       const bounds = avatar.getBounds();
@@ -513,10 +522,24 @@ if (!app.requestSingleInstanceLock()) {
         if (result.version !== 1 || result.habits.length !== 0) throw new Error('Smoke test state mismatch.');
         if (await window.webContents.executeJavaScript('document.body.dataset.ready') !== 'true') throw new Error('Renderer did not initialize.');
       }
+      if (shopSmoke) {
+        store.nameBuddy('Miso'); broadcast();
+        const captureDir = path.join(__dirname, '..', '.npm');
+        require('node:fs').mkdirSync(captureDir, { recursive: true });
+        await runShopSmoke({ avatar, popup, store, closeReward, hideEffects, broadcast, showPopup }, captureDir);
+        app.quit(); return;
+      }
       const shellDeadline = Date.now() + 5000;
       while (!avatar.isVisible() && Date.now() < shellDeadline) await new Promise(resolve => setTimeout(resolve, 25));
       if (icon.isEmpty() || !avatar.isAlwaysOnTop() || !avatar.isVisible()) throw new Error('Desktop shell did not initialize.');
       if (store.snapshot().settings.avatarSize !== 160 || Math.abs(avatar.getBounds().width - 160) > 1) throw new Error('First launch must use the largest buddy size');
+      const waitForBubble = async () => {
+        const deadline = Date.now() + 2000;
+        while (await effects.webContents.executeJavaScript('document.body.dataset.placementId') !== String(effectId)) {
+          if (Date.now() > deadline) throw new Error('Speech bubble did not finish positioning');
+          await new Promise(resolve => setTimeout(resolve, 25));
+        }
+      };
       const onboardingFs = require('node:fs');
       const onboardingCaptures = path.join(__dirname, '..', '.npm');
       onboardingFs.mkdirSync(onboardingCaptures, { recursive: true });
@@ -570,7 +593,7 @@ if (!app.requestSingleInstanceLock()) {
         placeAvatar({ x: bubbleArea.x + Math.round((bubbleArea.width - size) * xRatio), y: bubbleArea.y + Math.round((bubbleArea.height - size) * yRatio) }, size);
         positionPopup();
         showEffects(state, state === 'mystery' ? 'A little thought for your day. Take a breath, stretch your shoulders, and enjoy a moment of company.' : 'You earned a little surprise. Click to unwrap ✨');
-        await new Promise(resolve => setTimeout(resolve, 150));
+        await waitForBubble();
         const pet = avatar.getBounds(), frame = effects.getBounds();
         const body = await effects.webContents.executeJavaScript("(() => { const r = document.querySelector('#message').getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; })()");
         const bubble = { ...body, x: frame.x + body.x, y: frame.y + body.y };
@@ -740,7 +763,7 @@ if (!app.requestSingleInstanceLock()) {
       await popup.webContents.executeJavaScript("document.querySelector('#history').open = false; window.scrollTo(0, 0); new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
       fs.writeFileSync(path.join(captureDir, 'popup-preview.png'), (await popup.webContents.capturePage()).toPNG());
       reactToProgress({ state: store.snapshot(), completed: false, halfway: true, allComplete: false });
-      await effects.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 60))');
+      await waitForBubble();
       if (!encouragements.includes(await effects.webContents.executeJavaScript("document.querySelector('#message').textContent"))) throw new Error('Random halfway encouragement missing.');
       const halfwayFrame = effects.getBounds(), halfwayMenu = popup.getBounds();
       const halfwayBody = await effects.webContents.executeJavaScript("(() => { const r = document.querySelector('#message').getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; })()");
@@ -801,7 +824,7 @@ if (!app.requestSingleInstanceLock()) {
       cancelCelebration(); hideEffects(); stopRoll(); popup.hide();
       const reminderHabit = store.snapshot().habits.find(habit => !habit.archived && habit.name === 'Water');
       if (!showReminder(reminderHabit)) throw new Error('Buddy reminder bubble did not show');
-      await effects.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 80))');
+      await waitForBubble();
       if (await effects.webContents.executeJavaScript('document.body.dataset.state') !== 'reminder') throw new Error('Wrong reminder bubble state');
       if (!(await effects.webContents.executeJavaScript("document.querySelector('#message').textContent")).includes('water break')) throw new Error('Gentle reminder wording missing');
       if (showReminder(reminderHabit)) throw new Error('Reminder bubbles must not overlap');
@@ -832,7 +855,9 @@ if (!app.requestSingleInstanceLock()) {
       if (repeatOpen.opened || new Store(store.filePath).openMystery().opened) throw new Error('An opened box must not reopen after restart');
       fs.writeFileSync(path.join(captureDir, 'mystery-preview.png'), (await popup.webContents.capturePage()).toPNG());
       await popup.webContents.executeJavaScript("document.querySelector('#reward-close').click()");
-      await avatar.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 80))');
+      const greetingDeadline = Date.now() + 2000;
+      while ((effectState !== 'greeting' || !effects.isVisible()) && Date.now() < greetingDeadline) await new Promise(resolve => setTimeout(resolve, 25));
+      await waitForBubble();
       if (popup.isVisible() || await avatar.webContents.executeJavaScript('document.body.dataset.state') === 'gift') throw new Error('Closing the reward must bring the buddy back');
       if (Math.abs(avatar.getBounds().width - preferredSize) > 1) throw new Error('Buddy must return to preferred size');
       if (effectState !== 'greeting' || !effects.isVisible() || !(await effects.webContents.executeJavaScript("document.querySelector('#message').textContent"))) throw new Error('Reward close must show a time-of-day greeting');
@@ -843,7 +868,7 @@ if (!app.requestSingleInstanceLock()) {
       hideEffects();
       const thought = require('./thoughts').pool.find(item => item.answer);
       if (!showThought(thought, true) || !showThought(thought)) throw new Error('Daytime thought should appear in a quiet moment');
-      await effects.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 80))');
+      await new Promise(resolve => setTimeout(resolve, 80));
       if (await effects.webContents.executeJavaScript("document.querySelector('#message').textContent") !== formatSurprise(thought)) throw new Error('Daytime thought lost its punchline');
       if (popup.isVisible() || showThought(thought, true)) throw new Error('Thoughts must use one bubble at a time');
       hideEffects();
@@ -853,13 +878,14 @@ if (!app.requestSingleInstanceLock()) {
       const added = afterAdd.habits.find(habit => habit.name === 'A little stretch');
       await popup.webContents.executeJavaScript(`window.buddy.logProgress('${added.id}', 1)`);
       cancelCelebration(); hideEffects(); stopRoll(); avatar.webContents.send('avatar:reaction', { state: 'idle' });
-      await avatar.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 80))');
+      await new Promise(resolve => setTimeout(resolve, 80));
       if (await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'gift') throw new Error('Completing the new habit must earn another box');
       await avatar.webContents.executeJavaScript("document.querySelector('#buddy').click()");
-      await effects.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 80))');
+      await new Promise(resolve => setTimeout(resolve, 80));
       if (mysteryStatus(store.snapshot()).opened !== 2 || mysteryStatus(store.snapshot()).available) throw new Error('Second mystery box lifecycle failed');
       if (!popup.isVisible()) throw new Error('Second reward view must open');
-      console.log('SMOKE TEST PASSED: final completion keeps menu closed, dedicated reward reveal, one-time opening survives restart, buddy returns on close, and added habits can earn another box.');
+      await runShopSmoke({ avatar, popup, store, closeReward, hideEffects, broadcast, showPopup }, captureDir);
+      console.log('SMOKE TEST PASSED: habits, reactions, speech bubbles, rewards, shop preview and purchases, mix-and-match outfits on all buddies, and collection persistence.');
       app.quit();
     }
   }).catch(error => {

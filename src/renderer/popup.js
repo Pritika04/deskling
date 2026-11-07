@@ -10,6 +10,10 @@ let homeScroll = 0;
 let bannerMessage = '';
 let renderedDay = null;
 let editingCompletedMinutes = null;
+let collectionTab = 'shop';
+let collectionSlot = 'hat';
+let selectedAccessory = null;
+let draftOutfit = null;
 const clockSync = [];
 function syncClocks() { clockSync.forEach(sync => sync()); }
 function showView(view) {
@@ -21,17 +25,20 @@ function showView(view) {
   $('#settings').hidden = view !== 'settings'; $('#editor').hidden = view !== 'editor';
   $('#reward').hidden = view !== 'reward';
   $('#welcome').hidden = view !== 'welcome';
+  $('#collection').hidden = view !== 'collection';
   document.querySelector('footer').hidden = ['reward', 'welcome'].includes(view);
   $('#settings-toggle').hidden = view !== 'home'; $('#back-home').hidden = view === 'home';
+  $('#shop-toggle').hidden = view !== 'home';
   if (['reward', 'welcome'].includes(view)) $('#back-home').hidden = true;
   $('#settings-toggle').setAttribute('aria-expanded', String(view === 'settings'));
   scroller.scrollTo(0, view === 'home' ? homeScroll : 0);
+  if (view === 'collection') renderCollection();
   message('');
 }
 function refreshBanner() {
   const data = state ? HabitDomain.summary(state) : null;
   const halfway = data?.entries.some(entry => entry.amount >= entry.goal / 2 && entry.amount < entry.goal);
-  $('#status').textContent = bannerMessage || (data?.allComplete ? 'Lovely. All done for today.' : halfway ? "You're halfway there. One little step at a time." : data?.progress ? 'A little progress, and it counts.' : 'Just on this device. Just for you.');
+  $('#status').textContent = bannerMessage || (currentView === 'collection' ? collectionTab === 'shop' ? 'A little something to look forward to.' : 'Mix and match. These little treasures are yours.' : data?.allComplete ? 'Lovely. All done for today.' : halfway ? "You're halfway there. One little step at a time." : data?.progress ? 'A little progress, and it counts.' : 'Just on this device. Just for you.');
 }
 function message(text) { bannerMessage = text || ''; refreshBanner(); }
 function progressMessage(result) { message(result.completed ? result.allComplete ? 'Lovely. All done for today.' : 'A little win. Nicely done.' : result.halfway ? "You're halfway there!" : 'A little progress, and it counts.'); }
@@ -201,8 +208,91 @@ function render(next = state) {
   renderCalendar(data);
   $('#avatar-choice').value = state.settings.avatar; $('#palette').value = state.settings.palette;
   $('#accent').value = state.settings.accent || BuddyTheme.colors[state.settings.palette];
+  if (currentView === 'collection') renderCollection();
   refreshBanner();
 }
+
+function openCollection(tab = 'shop') {
+  collectionTab = tab;
+  selectedAccessory = tab === 'shop' ? BuddyWardrobe.catalog.find(item => !state.collection.owned.includes(item.id))?.id || BuddyWardrobe.catalog[0].id : null;
+  draftOutfit = { ...state.collection.equipped };
+  if (selectedAccessory) {
+    const item = BuddyWardrobe.catalog.find(entry => entry.id === selectedAccessory);
+    draftOutfit[item.slot] = item.id;
+  }
+  showView('collection');
+  $(tab === 'shop' ? '#shop-tab' : '#wardrobe-tab').focus({ preventScroll: true });
+}
+
+function renderCollection() {
+  if (!state) return;
+  const collection = state.collection;
+  draftOutfit ||= { ...collection.equipped };
+  const shop = collectionTab === 'shop';
+  $('#collection-title').textContent = shop ? 'Little treasures.' : `${state.settings.buddyName}’s wardrobe.`;
+  const balanceText = `${collection.coins} ${collection.coins === 1 ? 'coin' : 'coins'}`;
+  if ($('#coin-total').textContent !== balanceText) $('#coin-total').textContent = balanceText;
+  $('#shop-tab').setAttribute('aria-pressed', String(shop)); $('#wardrobe-tab').setAttribute('aria-pressed', String(!shop));
+  $('#collection-preview').innerHTML = BuddyWardrobe.preview(state.settings.avatar, draftOutfit);
+  $('#wardrobe-slots').hidden = shop; $('#coin-guide').hidden = !shop;
+  const action = $('#collection-action');
+  const selected = BuddyWardrobe.catalog.find(item => item.id === selectedAccessory);
+  if (shop && selected) {
+    const owned = collection.owned.includes(selected.id), wearing = collection.equipped[selected.slot] === selected.id;
+    const needed = selected.price - collection.coins;
+    $('#try-on-caption').textContent = `${owned ? 'Yours' : 'Trying on'} · ${selected.name}`;
+    action.textContent = owned ? wearing ? 'Wearing it' : 'Wear this' : needed > 0 ? `Save ${needed} more ${needed === 1 ? 'coin' : 'coins'}` : `Buy for ${selected.price} coins`;
+    action.disabled = busy || (owned ? wearing : needed > 0);
+  } else {
+    $('#try-on-caption').textContent = 'A look that feels like you.';
+    action.textContent = 'Wear this outfit';
+    action.disabled = busy || JSON.stringify(draftOutfit) === JSON.stringify(collection.equipped);
+  }
+  const slotList = $('#wardrobe-slots'); slotList.replaceChildren();
+  for (const [id, label] of Object.entries(BuddyWardrobe.slots)) {
+    const button = node('button', label); button.type = 'button'; button.setAttribute('aria-pressed', String(collectionSlot === id));
+    button.addEventListener('click', () => { collectionSlot = id; renderCollection(); $('#wardrobe-slots button[aria-pressed="true"]').focus({ preventScroll: true }); }); slotList.append(button);
+  }
+  const grid = $('#accessory-grid'); grid.replaceChildren();
+  if (!shop) {
+    const none = node('button', undefined, 'accessory-card'); none.type = 'button';
+    const emptyLabel = { hat: 'No hat', eyes: 'No glasses', neck: 'No scarf or bow', hand: 'No umbrella' }[collectionSlot];
+    none.append(node('span', '–', 'nothing-art'), node('strong', emptyLabel), node('small', 'Keep it simple'));
+    none.setAttribute('aria-pressed', String(draftOutfit[collectionSlot] === null));
+    none.addEventListener('click', () => { draftOutfit[collectionSlot] = null; renderCollection(); $('#collection-action').focus({ preventScroll: true }); }); grid.append(none);
+  }
+  const items = BuddyWardrobe.catalog.filter(item => shop || (item.slot === collectionSlot && collection.owned.includes(item.id)));
+  for (const item of items) {
+    const card = node('button', undefined, 'accessory-card'); card.type = 'button'; card.dataset.item = item.id;
+    const art = node('span', undefined, 'accessory-art');
+    art.innerHTML = BuddyWardrobe.icon(item.id);
+    card.append(art, node('strong', item.name), node('small', collection.owned.includes(item.id) ? 'Yours' : `${item.price} coins`));
+    card.setAttribute('aria-label', `Try on ${item.name}${collection.owned.includes(item.id) ? ', yours' : `, ${item.price} coins`}`);
+    card.setAttribute('aria-pressed', String(shop ? selectedAccessory === item.id : draftOutfit[item.slot] === item.id));
+    card.addEventListener('click', () => {
+      if (shop) { selectedAccessory = item.id; draftOutfit = { ...collection.equipped, [item.slot]: item.id }; }
+      else draftOutfit[item.slot] = item.id;
+      renderCollection(); document.querySelector('main').scrollTo({ top: 0, behavior: 'instant' });
+      $('#collection-action').focus({ preventScroll: true });
+    });
+    grid.append(card);
+  }
+  if (!shop && !items.length) grid.append(node('p', 'Your first little treasure is waiting in the shop.', 'muted wardrobe-empty'));
+}
+
+$('#shop-toggle').addEventListener('click', () => openCollection());
+$('#shop-tab').addEventListener('click', () => openCollection('shop'));
+$('#wardrobe-tab').addEventListener('click', () => openCollection('wardrobe'));
+$('#collection-action').addEventListener('click', async () => {
+  if (busy) return;
+  busy = true; renderCollection();
+  const item = BuddyWardrobe.catalog.find(entry => entry.id === selectedAccessory);
+  const buy = collectionTab === 'shop' && item && !state.collection.owned.includes(item.id);
+  try {
+    const next = await perform(() => buy ? window.buddy.buyAccessory(item.id) : window.buddy.equipOutfit(draftOutfit));
+    if (next) { draftOutfit = { ...next.collection.equipped }; render(next); message(buy ? `${item.name} is yours. Looking lovely!` : 'Looking lovely.'); }
+  } finally { busy = false; renderCollection(); }
+});
 async function moveHabit(id, targetId, after = false) {
   const ids = state.habits.filter(habit => !habit.archived).map(habit => habit.id);
   const index = ids.indexOf(id);
@@ -411,6 +501,8 @@ window.buddy.onReward(item => {
   $('#reward-title').textContent = item.title;
   $('#reward-text').textContent = item.text;
   $('#reward-author').textContent = item.author ? `— ${item.author}` : '';
+  $('#reward-coins').hidden = !state.collection.rewardedDays.includes(HabitDomain.localDay(new Date(), state.settings.dayStartHour));
+  $('#reward-coin-text').textContent = `Daily reward: +1 coin · Balance: ${state.collection.coins} ${state.collection.coins === 1 ? 'coin' : 'coins'}`;
   const labels = rewardButtonLabels.filter(label => label !== lastRewardButtonLabel);
   lastRewardButtonLabel = labels[Math.floor(Math.random() * labels.length)];
   $('#reward-close').textContent = lastRewardButtonLabel;

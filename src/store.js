@@ -5,6 +5,8 @@ const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { localDay, todayEntries, daySummary, mysteryStatus } = require('./renderer/domain');
 const { chooseSurprise } = require('./mystery');
+const { catalog } = require('./renderer/wardrobe');
+const { initialCollection, validateCollection, validateOutfit, accrueCoins } = require('./collection');
 
 const TYPES = ['count', 'checkbox', 'minutes', 'percent'];
 const CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -26,6 +28,7 @@ function initialState() {
     reminderQueue: [],
     mystery: { days: {}, usedIds: [], lastType: null },
     thoughts: { usedIds: [], lastType: null, nextAt: 0, day: null },
+    collection: initialCollection(),
   };
 }
 
@@ -50,6 +53,7 @@ function validateState(state) {
   if (!['plant', 'pineapple', 'star'].includes(state.settings.avatar) || !['sage', 'lavender', 'peach', 'ocean'].includes(state.settings.palette) ||
       (state.settings.accent !== null && !/^#[0-9a-f]{6}$/i.test(state.settings.accent))) throw new Error('Invalid appearance settings.');
   state.habits.forEach(validateHabit);
+  validateCollection(state.collection);
   if (typeof state.settings.hatched !== 'boolean' || typeof state.settings.buddyName !== 'string' || state.settings.buddyName.length > 24 || (state.settings.hatched && !state.settings.buddyName.trim())) throw new Error('Give your buddy a name of up to 24 characters.');
   if (!state.thoughts || !Array.isArray(state.thoughts.usedIds) || state.thoughts.usedIds.some(id => typeof id !== 'string') || (state.thoughts.lastType !== null && typeof state.thoughts.lastType !== 'string') || !Number.isFinite(state.thoughts.nextAt) || state.thoughts.nextAt < 0) throw new Error('Invalid buddy thought history.');
   if (state.thoughts.day !== null && !/^\d{4}-\d{2}-\d{2}$/.test(state.thoughts.day)) throw new Error('Invalid buddy thought day.');
@@ -85,6 +89,7 @@ class Store {
         if (!Object.hasOwn(this.state, 'reminderDeliveries')) this.state.reminderDeliveries = {};
         if (!Object.hasOwn(this.state, 'reminderQueue')) this.state.reminderQueue = [];
         if (!Object.hasOwn(this.state, 'mystery')) this.state.mystery = { days: {}, usedIds: [], lastType: null };
+        if (!Object.hasOwn(this.state, 'collection')) this.state.collection = initialCollection();
         if (!Object.hasOwn(this.state, 'thoughts')) this.state.thoughts = { usedIds: [], lastType: null, nextAt: 0, day: null };
         if (this.state.thoughts && !Object.hasOwn(this.state.thoughts, 'day')) this.state.thoughts.day = null;
         for (const [key, value] of Object.entries(initialState().settings)) {
@@ -113,7 +118,10 @@ class Store {
   snapshot() { return structuredClone(this.state); }
 
   commit(next) {
+    next = structuredClone(next);
     validateState(next);
+    accrueCoins(next, this.now());
+    validateCollection(next.collection);
     fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
     const temporary = `${this.filePath}.tmp`;
     fs.writeFileSync(temporary, `${JSON.stringify(next, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
@@ -132,6 +140,31 @@ class Store {
   nameBuddy(name) {
     if (typeof name !== 'string' || !name.trim() || name.trim().length > 24 || /[\u0000-\u001f\u007f]/.test(name)) throw new Error('Give your buddy a name of up to 24 characters.');
     return this.updateSettings({ buddyName: name.trim(), hatched: true });
+  }
+
+  refreshRewards() {
+    const next = this.snapshot();
+    return accrueCoins(next, this.now()) ? this.commit(next) : null;
+  }
+
+  buyAccessory(id) {
+    const item = catalog.find(entry => entry.id === id);
+    if (!item) throw new Error('That accessory is not in the shop.');
+    if (!this.state.settings.hatched) throw new Error('Meet your buddy first.');
+    const next = this.snapshot();
+    accrueCoins(next, this.now());
+    if (next.collection.owned.includes(id)) return this.snapshot();
+    if (next.collection.coins < item.price) throw new Error('A few more little wins will get you there.');
+    next.collection.coins -= item.price;
+    next.collection.owned.push(id);
+    next.collection.equipped[item.slot] = id;
+    return this.commit(next);
+  }
+
+  equipOutfit(outfit) {
+    validateOutfit(outfit, this.state.collection.owned);
+    const next = this.snapshot(); next.collection.equipped = structuredClone(outfit);
+    return this.commit(next);
   }
 
   syncToday(next) {

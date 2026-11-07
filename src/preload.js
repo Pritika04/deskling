@@ -5,6 +5,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('buddy', {
   getState: () => ipcRenderer.invoke('state:get'),
   nameBuddy: name => ipcRenderer.invoke('buddy:name', name),
+  buyAccessory: id => ipcRenderer.invoke('collection:buy', id),
+  equipOutfit: outfit => ipcRenderer.invoke('collection:equip', outfit),
   affection: (kind = 'play') => ipcRenderer.invoke('avatar:affection', kind),
   openMystery: () => ipcRenderer.invoke('mystery:open'),
   onReward: callback => {

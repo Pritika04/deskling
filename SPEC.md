@@ -99,7 +99,16 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 - A few ready-made palettes plus a custom accent color picker.
 - The heat map, progress bars, avatar tint, and buttons all follow the palette (use CSS variables so one change restyles everything).
 
-### 10. Install and launch
+### 10. Coins, little shop, and wardrobe
+- Earn one coin for the first time all current habits are complete each day. Added habits, corrections, repeated reward openings, and restarts never duplicate that daily coin.
+- Award five bonus coins at 3-, 10-, and 30-day milestones, once per milestone within each streak. A new streak can earn those bonuses again.
+- Award one monthly hello coin on the first visit each calendar month, including the first month. Missed days never remove coins or purchases.
+- A bag icon beside the gear opens a separate shop view. Ten original SVG accessories span hats, glasses, scarves/bows, and umbrellas, with prices from 3 to 12 coins.
+- Try-on previews do not change the desktop pet. Buying an affordable item saves the purchase and equips it immediately; buying an already owned item never charges again.
+- The My buddy tab is a wardrobe: preview and combine one owned item per slot, remove items, then save with Wear this outfit. Outfits work on all three buddies and stay attached through their animations.
+- Coins, reward ledgers, owned items, and outfits are stored locally. Purchases and reward credits are saved atomically.
+
+### 11. Install and launch
 - **Launch at login** on both platforms, enabled by default but toggleable.
 - One-line install per OS, pulling the right build from GitHub Releases:
   - macOS: a `curl ... | sh` script (or Homebrew cask later)
@@ -123,7 +132,8 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 5. Heat map, streak, and theming
 6. Reminders (buddy speech bubbles)
 7. Mystery box and content pool
-8. Launch at login, install scripts, GitHub Actions release builds
+8. Coin shop and mix-and-match wardrobe
+9. Launch at login, install scripts, GitHub Actions release builds
 
 ## Out of scope for v1 (future ideas)
 
@@ -133,6 +143,7 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 - **Rough-day mode** and grace days for streaks
 - **Friend mode**, where a trusted person sees a summary and can send notes into the mystery box
 - Auto-update, code signing, Linux support
+- New buddy species as larger collectible rewards
 
 ## Tone guide
 

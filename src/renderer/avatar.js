@@ -97,10 +97,16 @@ button.addEventListener('pointerleave', () => { hovered = false; clearTimeout(pe
 const resizeEdges = document.querySelectorAll('.resize-edge');
 let resizing = null;
 let currentSize = 68;
+let renderedOutfit = '';
 function updateSize(state) {
   buddyState = state;
   BuddyTheme.apply(state.settings);
   document.body.dataset.avatar = state.settings.avatar;
+  const outfitKey = JSON.stringify([state.settings.avatar, state.collection.equipped]);
+  if (outfitKey !== renderedOutfit) {
+    document.querySelector('#character').innerHTML = BuddyWardrobe.buddyMarkup(state.settings.avatar, state.collection.equipped, true);
+    renderedOutfit = outfitKey;
+  }
   if (!reacting) idleState();
   currentSize = state.settings.avatarSize;
   for (const edge of resizeEdges) edge.setAttribute('aria-valuenow', currentSize);
