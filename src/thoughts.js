@@ -7,6 +7,11 @@ const SCHEDULE_VERSION = 3;
 const firstDelay = random => (30 + random() * 30) * 60 * 1000;
 const delay = random => (75 + random() * 45) * 60 * 1000;
 const thoughtDuration = text => Math.min(12000, Math.max(6000, 2000 + Array.from(text).length * 55));
+function jokeSequence(item) {
+  if (!['joke', 'riddle'].includes(item.type) || typeof item.answer !== 'string' || !item.answer.trim()) return null;
+  const punchline = `${item.answer.trim()} 😂`;
+  return { question: item.text, punchline, thinkingMs: 3000, answerMs: thoughtDuration(punchline) };
+}
 
 // Wait for a quiet moment; sleeping computers never build a backlog.
 function tickThoughts(store, show, now = new Date(), random = Math.random, computerActive = true) {
@@ -33,4 +38,4 @@ function startThoughts(store, show, { isComputerActive = () => true } = {}) {
   const timer = setInterval(tick, 30000);
   return () => clearInterval(timer);
 }
-module.exports = { tickThoughts, startThoughts, pool, thoughtDuration };
+module.exports = { tickThoughts, startThoughts, pool, thoughtDuration, jokeSequence };

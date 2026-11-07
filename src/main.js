@@ -7,7 +7,7 @@ const { summary, mysteryStatus } = require('./renderer/domain');
 const makeTrayIcon = require('./tray-icon');
 const { startReminders } = require('./reminders');
 const { formatSurprise } = require('./mystery');
-const { startThoughts, thoughtDuration } = require('./thoughts');
+const { startThoughts, thoughtDuration, jokeSequence } = require('./thoughts');
 const { runShopSmoke } = require('./smoke-shop');
 const { RestClock, restAfterFor } = require('./rest');
 const { nearbyGaze } = require('./gaze');
@@ -27,6 +27,7 @@ let hatching = false;
 let affectionAt = 0;
 let reducedMotion = false;
 let effectsTimer;
+let thoughtRevealTimer;
 let effectId = 0;
 let lastGreeting = '';
 let lastEncouragement = '';
@@ -323,14 +324,16 @@ function reactToProgress(result, random = Math.random) {
 
 function hideEffects() {
   clearTimeout(effectsTimer);
+  clearTimeout(thoughtRevealTimer);
   effectId++;
   effectState = null;
   bubbleSize = null;
   if (effects && !effects.isDestroyed()) effects.hide();
 }
 
-function showEffects(state, message, duration = null) {
+function showEffects(state, message, duration = null, { thinking = false } = {}) {
   clearTimeout(effectsTimer);
+  clearTimeout(thoughtRevealTimer);
   const id = ++effectId;
   effectState = state;
   bubbleSize = null;
@@ -341,7 +344,7 @@ function showEffects(state, message, duration = null) {
   const position = clampPosition({ x: bounds.x + bounds.width / 2 - 160, y: bounds.y + bounds.height - height }, 320, height);
   effects.setBounds({ ...position, width: 320, height });
   effects.webContents.send('avatar:reaction', {
-    id, bubble, state, message, reducedMotion, height,
+    id, bubble, state, message, thinking, reducedMotion, height,
     x: bounds.x + bounds.width / 2 - position.x,
     y: bounds.y + bounds.height / 2 - position.y,
     accent: store.snapshot().settings.accent || { sage: '#789568', lavender: '#9582b4', peach: '#c58c70', ocean: '#67989f' }[store.snapshot().settings.palette],
@@ -396,7 +399,16 @@ function showThought(item, checkOnly = false) {
   if (quitting || rewardOpen || rolling || drag || resize || reopenAfterCelebration || popup.isVisible() || effectState || effects.webContents.isLoading() || mysteryStatus(store.snapshot()).available) return false;
   if (!checkOnly) {
     avatar.webContents.send('avatar:reaction', { state: 'smile', duration: 3000 });
-    showEffects('mystery', formatSurprise(item));
+    const sequence = jokeSequence(item);
+    if (sequence) {
+      showEffects('mystery', sequence.question, null, { thinking: true });
+      const id = effectId;
+      thoughtRevealTimer = setTimeout(() => {
+        if (quitting || effectId !== id) return;
+        avatar.webContents.send('avatar:reaction', { state: reducedMotion ? 'smile' : 'wiggle' });
+        showEffects('mystery', sequence.punchline, sequence.answerMs);
+      }, sequence.thinkingMs);
+    } else showEffects('mystery', formatSurprise(item));
   }
   return true;
 }
@@ -801,10 +813,29 @@ if (!app.requestSingleInstanceLock()) {
       const layoutOrigin = avatar.getBounds();
       if (!reducedMotion) {
         await new Promise(resolve => setTimeout(resolve, 50));
+        const floatDistance = await avatar.webContents.executeJavaScript(`(() => {
+          const wrapper = document.querySelector('#idle-motion');
+          const float = wrapper.getAnimations().find(animation => animation.animationName === 'idle-float');
+          if (!float) throw new Error('Awake buddy must continuously float');
+          const elapsed = float.currentTime;
+          float.pause(); float.currentTime = 0;
+          const start = wrapper.getBoundingClientRect().top;
+          float.currentTime = 2600;
+          const distance = start - wrapper.getBoundingClientRect().top;
+          float.currentTime = elapsed; float.play();
+          if (getComputedStyle(document.querySelector('#buddy-shadow')).animationName !== 'floating-shadow') throw new Error('The shadow must move gently with the float');
+          document.body.classList.add('dragging');
+          const paused = getComputedStyle(wrapper).animationPlayState === 'paused';
+          document.body.classList.remove('dragging');
+          if (!paused) throw new Error('Floating must pause while moving the buddy');
+          return distance;
+        })()`);
+        if (floatDistance < 2) throw new Error('Idle hovering must be visible at the current buddy size');
         const idleFidget = await avatar.webContents.executeJavaScript("hovered = false; playIdleFidget('wobble')");
         if (!idleFidget) throw new Error('Awake buddy must allow a gentle idle wobble');
         if (await avatar.webContents.executeJavaScript("getComputedStyle(document.querySelector('#character')).animationName") !== 'idle-wobble') throw new Error('Idle wobble animation must be applied');
         await avatar.webContents.executeJavaScript("react({ state: 'sleepy', hold: true })");
+        if (await avatar.webContents.executeJavaScript("getComputedStyle(document.querySelector('#idle-motion')).animationName") !== 'none') throw new Error('Idle hovering must stop during naps');
         if (await avatar.webContents.executeJavaScript("playIdleFidget('bounce')") || await avatar.webContents.executeJavaScript("document.body.classList.contains('idle-wobble')")) throw new Error('Fidgets must stop while sleeping');
         await avatar.webContents.executeJavaScript("react({ state: 'idle' }); playIdleFidget('bounce')");
         if (await avatar.webContents.executeJavaScript("getComputedStyle(document.querySelector('#character')).animationName") !== 'idle-bounce') throw new Error('Idle bounce animation must be applied');
@@ -1127,14 +1158,22 @@ if (!app.requestSingleInstanceLock()) {
       hideEffects();
       const thought = require('./thoughts').pool.find(item => item.answer);
       if (!showThought(thought, true) || !showThought(thought)) throw new Error('Daytime thought should appear in a quiet moment');
-      await new Promise(resolve => setTimeout(resolve, 80));
-      if (await effects.webContents.executeJavaScript("document.querySelector('#message').textContent") !== formatSurprise(thought)) throw new Error('Daytime thought lost its punchline');
+      await waitForBubble();
+      const joke = jokeSequence(thought);
+      if (!await effects.webContents.executeJavaScript(`document.querySelector('#message').textContent.startsWith(${JSON.stringify(joke.question)}) && !!document.querySelector('.thinking-dots') && !document.querySelector('#message').textContent.includes(${JSON.stringify(thought.answer)})`)) throw new Error('Jokes must ask the question with thinking dots before revealing the answer');
+      fs.writeFileSync(path.join(captureDir, 'joke-question-preview.png'), (await effects.webContents.capturePage()).toPNG());
       if (popup.isVisible() || showThought(thought, true)) throw new Error('Thoughts must use one bubble at a time');
       await new Promise(resolve => setTimeout(resolve, 3300));
-      if (!effects.isVisible() || effectState !== 'mystery') throw new Error('Daytime jokes must remain readable beyond three seconds');
-      await new Promise(resolve => setTimeout(resolve, thoughtDuration(formatSurprise(thought)) - 3300 + 250));
+      await waitForBubble();
+      if (!effects.isVisible() || await effects.webContents.executeJavaScript("document.querySelector('#message').textContent") !== joke.punchline || await effects.webContents.executeJavaScript("!!document.querySelector('.thinking-dots')")) throw new Error('The answer and laughing emoji must replace thinking dots after three seconds');
+      fs.writeFileSync(path.join(captureDir, 'joke-answer-preview.png'), (await effects.webContents.capturePage()).toPNG());
+      await new Promise(resolve => setTimeout(resolve, joke.answerMs + 250));
       if (effects.isVisible() || effectState) throw new Error('Daytime thoughts must still dismiss after their reading time');
       hideEffects();
+      showThought(thought);
+      showPopup();
+      await new Promise(resolve => setTimeout(resolve, 3250));
+      if (effects.isVisible() || effectState) throw new Error('Opening the menu must cancel a waiting punchline without bringing its bubble back');
       showPopup();
       const afterAdd = await popup.webContents.executeJavaScript("window.buddy.addHabit({ name: 'A little stretch', type: 'checkbox' })");
       if (mysteryStatus(afterAdd).available) throw new Error('New habit must be complete before another box is earned');

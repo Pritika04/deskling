@@ -6,4 +6,10 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 #tail-fill { fill: #f8f4ec; }
 #tail-outline { fill: none; stroke: var(--accent, #789568); stroke-width: 1; stroke-linejoin: round; }
 body[data-state="mystery"] #message { white-space: pre-line; }
+.thinking-dots { display: block; width: max-content; height: 16px; margin-top: 2px; color: var(--accent, #789568); }
+.thinking-dots > span { display: inline-block; font-size: 19px; line-height: 12px; animation: thinking-dot .9s ease-in-out infinite; }
+.thinking-dots > span:nth-child(2) { animation-delay: .15s; }
+.thinking-dots > span:nth-child(3) { animation-delay: .3s; }
+@keyframes thinking-dot { 0%, 75%, 100% { opacity: .35; transform: translateY(0); } 35% { opacity: 1; transform: translateY(-2px); } }
+@media (prefers-reduced-motion: reduce) { .thinking-dots > span { animation: none; opacity: .7; } }
 [hidden] { display: none !important; }

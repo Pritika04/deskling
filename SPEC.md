@@ -61,7 +61,7 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 
 ### 4. Popup window
 - The buddy stays awake while the computer is actively used, including work in other apps. It naps after 45 minutes of computer inactivity during 6 AM–10 PM, or 10 minutes during 10 PM–6 AM, using local time without any working-hours setup. Using the computer or interacting directly with the buddy wakes it. Reminders and random thoughts briefly wake its expression, then let it resume its nap without inventing user activity. The timer starts fresh on launch and does not change habit data.
-- While awake and idle, a very subtle breathing animation and occasional tiny wobble or bounce (every random 20–45 seconds) add life without moving its window or opening messages. Fidgets pause for hover affection, sleep, reactions, dragging/resizing, and reduced motion; they never keep it awake.
+- While awake and idle, the buddy continuously floats a few pixels, drifts side to side, and softly sways. Its grounded shadow gently changes with the float. Occasional small wobbles or bounces (every random 12–24 seconds) add variety without moving its window, changing its saved size, or opening messages. Fidgets pause for hover affection, sleep, reactions, dragging/resizing, and reduced motion; idle floating pauses during dragging/resizing and stops for sleep or reactions. Motion never keeps it awake.
 - Small and calm. Shows today's habits, today's progress, the streak, and the heat map.
 - A gear icon for settings (palette, avatar choice, reminders), hidden by default.
 
@@ -100,6 +100,7 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 - Reward content lives in `content/mystery.json`: quotes, motivation, and encouraging end-of-day notes, bundled offline.
 - Don't repeat the same content type two days in a row, and avoid repeating the same item until the pool is exhausted.
 - Separate `content/random.json` holds jokes, riddles, kindness prompts, and playful thoughts. The first thought waits a random 30–60 minutes; later thoughts wait 75–120 minutes. Thoughts can appear during late-night work too; they wait while the computer has had no input for ten minutes, or while the buddy is busy. Deadlines persist across restarts and midnight. On upgrade, distant old deadlines move closer without postponing an earlier or overdue thought. Pause reminders also pauses these thoughts. Each pool has independent repeat protection, saved across restarts.
+- Jokes and riddles with a separate answer first show their question with three softly animated thinking dots. After three seconds, the answer replaces the question with a laughing emoji and remains readable for 6–12 seconds. Other thoughts keep their normal presentation. Reduced motion keeps the dots still. Opening the menu, moving the buddy, suspending the computer, or replacing the bubble cancels any pending punchline.
 
 ### 9. Themes
 - A few ready-made palettes plus a custom accent color picker.

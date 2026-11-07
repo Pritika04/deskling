@@ -5,17 +5,34 @@ button { display: block; width: 100%; height: 100%; padding: 5px; border: 0; bac
 button:active { cursor: grabbing; }
 button:focus-visible { outline: 2px dashed #70896a; outline-offset: -9px; border-radius: 24px; }
 svg { width: 100%; height: 100%; pointer-events: none; }
+#buddy > svg { overflow: visible; }
 .body-shape { display: none; fill: var(--soft); }
 body[data-avatar="plant"] .plant, body[data-avatar="pineapple"] .pineapple, body[data-avatar="star"] .star { display: inline; }
 .plant > path:first-child { fill: var(--soft); }
 .plant > path:last-child { fill: var(--accent); }
 #character { transform-origin: 50px 52px; }
-body[data-state="idle"] #character { animation: awake-breathe 6s ease-in-out infinite; }
-body[data-state="idle"].idle-wobble #character { animation: idle-wobble 1.4s ease-in-out; }
-body[data-state="idle"].idle-bounce #character { animation: idle-bounce 1.4s ease-in-out; }
-@keyframes awake-breathe { 50% { transform: translateY(-.7px) scale(1.004, .996); } }
-@keyframes idle-wobble { 25% { transform: rotate(-2deg); } 65% { transform: rotate(2deg); } }
-@keyframes idle-bounce { 30%, 70% { transform: translateY(-2px); } 50% { transform: translateY(0); } }
+body[data-state="idle"] #idle-motion { animation: idle-float 5.2s ease-in-out infinite; }
+body[data-state="idle"] #character { animation: awake-sway 7s ease-in-out infinite; }
+#buddy-shadow { transform-origin: 50px 91px; }
+body[data-state="idle"] #buddy-shadow { animation: floating-shadow 5.2s ease-in-out infinite; }
+body[data-state="idle"].idle-wobble #character { animation: idle-wobble 1.8s ease-in-out; }
+body[data-state="idle"].idle-bounce #character { animation: idle-bounce 1.8s ease-in-out; }
+body.dragging #idle-motion, body.resizing #idle-motion,
+body.dragging #character, body.resizing #character,
+body.dragging #buddy-shadow, body.resizing #buddy-shadow { animation-play-state: paused; }
+@keyframes idle-float {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(1.2px, -2.2px); }
+  50% { transform: translate(.3px, -4.5px); }
+  75% { transform: translate(-1.2px, -2px); }
+}
+@keyframes awake-sway {
+  0%, 100% { transform: rotate(-1.5deg); }
+  50% { transform: rotate(1.8deg); }
+}
+@keyframes floating-shadow { 0%, 100% { opacity: .12; transform: scaleX(1); } 50% { opacity: .075; transform: scaleX(.86); } }
+@keyframes idle-wobble { 0%, 100% { transform: rotate(-1.5deg); } 25% { transform: rotate(-3deg); } 65% { transform: rotate(3deg); } }
+@keyframes idle-bounce { 0%, 100% { transform: rotate(-1.5deg); } 30%, 70% { transform: translateY(-3px) rotate(1.5deg); } 50% { transform: translateY(0); } }
 #egg { display: none; transform-origin: 50px 85px; }
 .egg-crack { opacity: 0; }
 body[data-state="egg"] #character, body[data-state="hatching"] #character { display: none; }

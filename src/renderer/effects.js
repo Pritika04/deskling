@@ -26,6 +26,16 @@ window.buddy.onReaction(reaction => {
   message.hidden = !reaction.bubble;
   tail.toggleAttribute('hidden', !reaction.bubble);
   message.textContent = reaction.bubble ? reaction.message : '';
+  if (reaction.bubble && reaction.thinking) {
+    const dots = document.createElement('span');
+    dots.className = 'thinking-dots';
+    dots.setAttribute('aria-label', 'Thinking');
+    for (let index = 0; index < 3; index++) {
+      const dot = document.createElement('span');
+      dot.textContent = '.'; dot.setAttribute('aria-hidden', 'true'); dots.append(dot);
+    }
+    message.append(dots);
+  }
   message.style.left = '12px'; message.style.top = '12px';
   message.style.maxWidth = '250px';
   if (reaction.bubble) {

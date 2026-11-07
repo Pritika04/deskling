@@ -70,6 +70,7 @@ button.addEventListener('pointerdown', event => {
   clearTimeout(petTimer);
   clearIdleFidget();
   pointer = { x: event.screenX, y: event.screenY, id: event.pointerId };
+  document.body.classList.add('dragging');
   applyGaze();
   moved = false;
   button.setPointerCapture(event.pointerId);
@@ -83,6 +84,7 @@ button.addEventListener('pointermove', event => {
 function finish() {
   if (!pointer) return;
   pointer = null;
+  document.body.classList.remove('dragging');
   applyGaze();
   window.buddy.drag('end');
 }
@@ -192,11 +194,11 @@ function playIdleFidget(kind = Math.random() < .5 ? 'wobble' : 'bounce') {
   if (!['wobble', 'bounce'].includes(kind) || pointer || resizing !== null || reacting || resting || hovered || reducedMotion.matches || document.hidden || document.body.dataset.state !== 'idle') return false;
   clearIdleFidget();
   document.body.classList.add(`idle-${kind}`);
-  idleFidgetTimer = setTimeout(clearIdleFidget, 1400);
+  idleFidgetTimer = setTimeout(clearIdleFidget, 1800);
   return true;
 }
 function scheduleIdleFidget() {
-  setTimeout(() => { playIdleFidget(); scheduleIdleFidget(); }, 20000 + Math.random() * 25000);
+  setTimeout(() => { playIdleFidget(); scheduleIdleFidget(); }, 12000 + Math.random() * 12000);
 }
 scheduleIdleFidget();
 function scheduleExpression() {

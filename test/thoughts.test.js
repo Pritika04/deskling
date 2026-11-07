@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { Store } = require('../src/store');
-const { tickThoughts, pool, thoughtDuration } = require('../src/thoughts');
+const { tickThoughts, pool, thoughtDuration, jokeSequence } = require('../src/thoughts');
 const { chooseSurprise } = require('../src/mystery');
 
 test('thoughts wait, defer while busy or the computer is idle, respect pause, and persist their own bag', t => {
@@ -136,4 +136,24 @@ test('short thoughts stay six seconds, long jokes get more reading time, and dur
     const duration = thoughtDuration(item.text + (item.answer || ''));
     assert.ok(duration >= 6000 && duration <= 12000);
   }
+});
+
+test('jokes and riddles separate the setup, three-second thinking pause, and readable laughing answer', () => {
+  for (const item of pool.filter(item => ['joke', 'riddle'].includes(item.type) && item.answer)) {
+    const before = structuredClone(item), sequence = jokeSequence(item);
+    assert.equal(sequence.question, item.text);
+    assert.equal(sequence.thinkingMs, 3000);
+    assert.equal(sequence.punchline, `${item.answer.trim()} 😂`);
+    assert.ok(sequence.answerMs >= 6000 && sequence.answerMs <= 12000);
+    assert.deepEqual(item, before);
+  }
+});
+
+test('ordinary thoughts and incomplete jokes do not create an empty punchline', () => {
+  for (const item of [
+    { type: 'smile', text: 'A little thought.' },
+    { type: 'joke', text: 'A one-line joke.' },
+    { type: 'riddle', text: 'A question?', answer: '  ' },
+    { type: 'kindness', text: 'A little kindness.', answer: 'A note.' },
+  ]) assert.equal(jokeSequence(item), null);
 });
