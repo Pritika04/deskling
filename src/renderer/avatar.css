@@ -77,6 +77,10 @@ body[data-state="welcome-dance"] .normal-mouth, body[data-state="welcome-dance"]
 body[data-state="welcome-dance"] .happy-mouth, body[data-state="welcome-dance"] .happy-eyes { display: inline; }
 body[data-state="welcome-dance"] #character { animation: welcome-step .45s ease-in-out 6; }
 @keyframes welcome-step { 25% { transform: translateY(-5px) rotate(-5deg); } 75% { transform: translateY(-3px) rotate(5deg); } }
+body[data-state="welcome-bounce"] .normal-mouth, body[data-state="welcome-bounce"] .eye { display: none; }
+body[data-state="welcome-bounce"] .happy-mouth, body[data-state="welcome-bounce"] .happy-eyes { display: inline; }
+body[data-state="welcome-bounce"] #character { animation: welcome-hop .65s ease-in-out 4; }
+@keyframes welcome-hop { 40% { transform: translateY(-5px) rotate(-2deg); } 70% { transform: translateY(0) scaleY(.97); } }
 body[data-state="sleepy"] .eye { transform: scaleY(.12); }
 body[data-state="sleepy"] #character { animation: breathe 3s ease-in-out infinite; }
 body[data-state="sleepy"] .sleep-marks text { transform-box: fill-box; transform-origin: center; animation: sleepy-drift 2.8s ease-in-out infinite; }

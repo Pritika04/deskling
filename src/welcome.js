@@ -4,6 +4,9 @@ const HOUR = 60 * 60 * 1000;
 const morning = ['Morning, sunshine! One little step at a time.', 'Good morning! Your little cheerleader is here.', 'A fresh day, tiny steps. You’ve got this!', 'Morning! Let’s make room for something good today.', 'Hello, new day! Ready for one small win?'];
 const returns = ['You’re back! I missed your company.', 'There you are. I saved your spot.', 'Welcome back! A little stretch before we begin?', 'Oh, hello again. Ready when you are.', 'Back together. One little step at a time.'];
 const later = ['Hello, sunshine! There’s still room for a little win.', 'A little hello. Let’s make the rest of today lovely.', 'Your little cheerleader is here. Ready when you are.'];
+morning.push('Morning! What tiny win shall we chase today?', 'Good morning! If today had a theme song, what would it be?', 'Rise and shine! What are you looking forward to today?', 'Morning! I brought the wiggles. You bring your lovely self.', 'New day, same tiny sidekick. What is our first adventure?');
+returns.push('You’re back! If we could teleport for a snack, where would we go?', 'There you are! What was the best little bit of your break?', 'Welcome back! Important question: pancakes or waffles?', 'Reunited! Shall we start with a stretch or a tiny victory?', 'You’re here! I have been practicing my welcome wiggle.', 'Hello again! If today were a color, which one would it be?', 'Back for another little adventure? I am coming too.', 'Welcome back! What is one nice thing we can do for you today?');
+later.push('Hello, you! What is one little thing worth smiling about?', 'Your tiny sidekick has arrived. What is our next adventure?', 'A fresh hello! If we had a team name, what would it be?', 'There you are! Ready for a little win and some good company?');
 function chooseWelcome(kind, now, previous = '', random = Math.random) {
   const pool = kind === 'return' ? returns : now.getHours() < 12 ? morning : later;
   const choices = pool.filter(text => text !== previous);
@@ -50,7 +53,8 @@ class WelcomeManager {
     const text = chooseWelcome(kind, now, history.lastMessage, this.random);
     this.store.saveWelcome({ day: kind === 'daily' ? localDay(now, 5) : history.day, lastSeenAt: now.getTime(), lastGreetingAt: now.getTime(), lastMessage: text });
     this.pending = null;
-    return { kind, text };
+    const motion = kind === 'daily' ? 'dance' : ['dance', 'welcome-bounce', 'wiggle'][Math.min(2, Math.floor(this.random() * 3))];
+    return { kind, text, motion };
   }
   firstHello() {
     const now = this.now();

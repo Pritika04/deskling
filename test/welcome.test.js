@@ -87,3 +87,28 @@ test('legacy data gains welcome history, and message choices avoid consecutive r
     assert.notEqual(chooseWelcome(kind, now, first, () => 0), first);
   }
 });
+
+test('long-break welcomes vary between a desktop dance, a bounce, and a wiggle without duplicate unlocks', t => {
+  const { manager, advance } = setup(t);
+  manager.active(); assert.equal(manager.take().motion, 'dance');
+  for (const [random, motion] of [[0, 'dance'], [0.5, 'welcome-bounce'], [0.99, 'wiggle']]) {
+    manager.leave('suspend'); advance(HOUR);
+    manager.random = () => random;
+    assert.equal(manager.back('resume'), true);
+    const greeting = manager.take();
+    assert.equal(greeting.kind, 'return'); assert.equal(greeting.motion, motion);
+    manager.back('resume'); manager.back('unlock');
+    assert.equal(manager.take(), null);
+  }
+});
+
+test('daily and return greetings include fun questions alongside simple hellos', () => {
+  for (const kind of ['daily', 'return']) {
+    for (const hour of [8, 16]) {
+      const messages = new Set(Array.from({ length: 100 }, (_, index) => chooseWelcome(kind, new Date(2026, 10, 7, hour), '', () => index / 100)));
+      assert.ok(messages.size >= 7);
+      assert.ok([...messages].some(text => text.includes('?')));
+      assert.ok([...messages].some(text => !text.includes('?')));
+    }
+  }
+});

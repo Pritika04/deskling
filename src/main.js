@@ -7,7 +7,7 @@ const { summary, mysteryStatus } = require('./renderer/domain');
 const makeTrayIcon = require('./tray-icon');
 const { startReminders } = require('./reminders');
 const { formatSurprise } = require('./mystery');
-const { startThoughts } = require('./thoughts');
+const { startThoughts, thoughtDuration } = require('./thoughts');
 const { runShopSmoke } = require('./smoke-shop');
 const { RestClock, restAfterFor } = require('./rest');
 const { nearbyGaze } = require('./gaze');
@@ -93,14 +93,14 @@ function flushWelcome() {
     if (!item) return false;
     restClock.touch();
     const gift = mysteryStatus(store.snapshot()).available;
-    if (!activeWelcome && item.kind === 'daily' && !gift && startWelcomeDance()) {
+    if (!activeWelcome && item.motion === 'dance' && !gift && startWelcomeDance()) {
       activeWelcome = { item, phase: 'dance' };
       welcomeTimer = setTimeout(() => { if (activeWelcome) activeWelcome.phase = 'ready'; flushWelcome(); }, 2850);
       return true;
     }
     activeWelcome = null;
-    avatar.webContents.send('avatar:reaction', { state: gift ? 'idle' : reducedMotion ? 'smile' : 'wiggle', duration: 3000 });
-    showEffects('greeting', item.text);
+    avatar.webContents.send('avatar:reaction', { state: gift ? 'idle' : reducedMotion ? 'smile' : item.motion === 'dance' ? 'wiggle' : item.motion, duration: 3000 });
+    showEffects('greeting', item.text, 8000);
     return true;
   } catch (error) { console.error('Could not greet you:', error.message); return false; }
 }
@@ -329,7 +329,7 @@ function hideEffects() {
   if (effects && !effects.isDestroyed()) effects.hide();
 }
 
-function showEffects(state, message) {
+function showEffects(state, message, duration = null) {
   clearTimeout(effectsTimer);
   const id = ++effectId;
   effectState = state;
@@ -347,7 +347,7 @@ function showEffects(state, message) {
     accent: store.snapshot().settings.accent || { sage: '#789568', lavender: '#9582b4', peach: '#c58c70', ocean: '#67989f' }[store.snapshot().settings.palette],
   });
   if (!bubble) effects.showInactive();
-  effectsTimer = setTimeout(hideEffects, state === 'roll' ? 4200 : 3000);
+  effectsTimer = setTimeout(hideEffects, duration ?? (state === 'mystery' ? thoughtDuration(message) : state === 'roll' ? 4200 : 3000));
 }
 
 function showReminder(habit) {
@@ -787,7 +787,7 @@ if (!app.requestSingleInstanceLock()) {
         if (!showThought(napThought)) throw new Error('Daytime thoughts must be allowed while napping');
         await waitForBubble();
         if (restClock.lastActivity !== idleDeadline || await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'smile') throw new Error('Thoughts must briefly wake without counting as user activity');
-        await new Promise(resolve => setTimeout(resolve, 3100));
+        await new Promise(resolve => setTimeout(resolve, thoughtDuration(formatSurprise(napThought)) + 100));
         if (await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'sleepy') throw new Error('Buddy must settle back down after a thought');
         affectionAt = 0;
         await avatar.webContents.executeJavaScript("lastPet = 0; document.querySelector('#buddy').dispatchEvent(new PointerEvent('pointerenter'))");
@@ -1130,6 +1130,10 @@ if (!app.requestSingleInstanceLock()) {
       await new Promise(resolve => setTimeout(resolve, 80));
       if (await effects.webContents.executeJavaScript("document.querySelector('#message').textContent") !== formatSurprise(thought)) throw new Error('Daytime thought lost its punchline');
       if (popup.isVisible() || showThought(thought, true)) throw new Error('Thoughts must use one bubble at a time');
+      await new Promise(resolve => setTimeout(resolve, 3300));
+      if (!effects.isVisible() || effectState !== 'mystery') throw new Error('Daytime jokes must remain readable beyond three seconds');
+      await new Promise(resolve => setTimeout(resolve, thoughtDuration(formatSurprise(thought)) - 3300 + 250));
+      if (effects.isVisible() || effectState) throw new Error('Daytime thoughts must still dismiss after their reading time');
       hideEffects();
       showPopup();
       const afterAdd = await popup.webContents.executeJavaScript("window.buddy.addHabit({ name: 'A little stretch', type: 'checkbox' })");
@@ -1195,8 +1199,9 @@ if (!app.requestSingleInstanceLock()) {
         if (welcomeManager.pending || effectState) throw new Error('Resume must wait while the screen is locked');
         restClock.lastActivity -= restClock.timeoutMs + 1; restClock.check();
         powerMonitor.emit('unlock-screen');
+        if (rolling) await new Promise(resolve => setTimeout(resolve, 2950));
         await waitForBubble();
-        if (restClock.sleeping || rolling || effectState !== 'greeting') throw new Error('Long-break return must wake and greet with a small reaction');
+        if (restClock.sleeping || rolling || effectState !== 'greeting') throw new Error('Long-break return must wake and greet after its playful reaction');
         const greetingId = effectId;
         powerMonitor.emit('resume'); powerMonitor.emit('unlock-screen');
         if (effectId !== greetingId || welcomeManager.pending) throw new Error('Wake and unlock must not give two greetings');

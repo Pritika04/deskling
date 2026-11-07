@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { Store } = require('../src/store');
-const { tickThoughts, pool } = require('../src/thoughts');
+const { tickThoughts, pool, thoughtDuration } = require('../src/thoughts');
 const { chooseSurprise } = require('../src/mystery');
 
 test('thoughts wait, defer while busy or the computer is idle, respect pause, and persist their own bag', t => {
@@ -16,8 +16,8 @@ test('thoughts wait, defer while busy or the computer is idle, respect pause, an
   let now = new Date(2026, 10, 6, 12), delivered = [];
   const show = (item, check) => { if (!check) delivered.push(item); return true; };
   assert.equal(tickThoughts(store, show, now, () => 0), false);
-  assert.equal(store.snapshot().thoughts.nextAt, now.getTime() + 120 * 60000);
-  now = new Date(now.getTime() + 121 * 60000);
+  assert.equal(store.snapshot().thoughts.nextAt, now.getTime() + 30 * 60000);
+  now = new Date(now.getTime() + 31 * 60000);
   assert.equal(tickThoughts(store, () => false, now, () => 0), false);
   assert.deepEqual(store.snapshot().thoughts.usedIds, []);
   store.updateSettings({ remindersPaused: true });
@@ -40,29 +40,29 @@ test('daytime pool uses every selected item before repeating', () => {
   assert.equal(seen.size, pool.length);
 });
 
-test('random two-to-three-hour gaps survive restarts and midnight without resetting', t => {
+test('a shorter first wait and random 75–120-minute gaps survive restarts and midnight', t => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'buddy-thought-timing-'));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
   const file = path.join(directory, 'state.json');
   let store = new Store(file);
-  const morning = new Date(2026, 10, 6, 21);
+  const morning = new Date(2026, 10, 6, 23);
   let delivered = 0;
   const show = (_item, check) => { if (!check) delivered++; return true; };
   tickThoughts(store, show, morning, () => .25);
-  const firstDue = morning.getTime() + 135 * 60000;
+  const firstDue = morning.getTime() + 37.5 * 60000;
   assert.equal(store.snapshot().thoughts.nextAt, firstDue);
   store = new Store(file);
   tickThoughts(store, show, new Date(morning.getTime() + 1000), () => .99);
   assert.equal(store.snapshot().thoughts.nextAt, firstDue);
   assert.equal(tickThoughts(store, show, new Date(firstDue), () => .75), true);
-  assert.equal(store.snapshot().thoughts.nextAt, firstDue + 165 * 60000);
+  assert.equal(store.snapshot().thoughts.nextAt, firstDue + 108.75 * 60000);
   const seen = store.snapshot().thoughts.usedIds;
   const midnight = new Date(2026, 10, 7, 0);
   assert.equal(tickThoughts(store, show, midnight, () => .1), false);
-  assert.equal(store.snapshot().thoughts.nextAt, firstDue + 165 * 60000);
+  assert.equal(store.snapshot().thoughts.nextAt, firstDue + 108.75 * 60000);
   assert.deepEqual(store.snapshot().thoughts.usedIds, seen);
   assert.equal(delivered, 1);
-  assert.equal(tickThoughts(store, show, new Date(firstDue + 165 * 60000), () => .1), true);
+  assert.equal(tickThoughts(store, show, new Date(firstDue + 108.75 * 60000), () => .1), true);
   assert.equal(delivered, 2);
 });
 
@@ -81,32 +81,59 @@ test('late-night work gets thoughts too, while time away from the computer does 
   assert.equal(delivered, 2);
 });
 
-test('the old frequent schedule is replaced once without losing content history', t => {
+test('upgrade preserves an earlier deadline and content history without resetting on restart', t => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'buddy-thought-upgrade-'));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
   const store = new Store(path.join(directory, 'state.json'));
   const now = new Date(2026, 10, 6, 12);
   store.saveThoughts({ usedIds: [pool[0].id], lastType: pool[0].type, day: '2026-11-06', nextAt: now.getTime() + 15 * 60000 });
   assert.equal(tickThoughts(store, () => true, now, () => .5), false);
-  assert.equal(store.snapshot().thoughts.nextAt, now.getTime() + 150 * 60000);
+  assert.equal(store.snapshot().thoughts.nextAt, now.getTime() + 15 * 60000);
   assert.deepEqual(store.snapshot().thoughts.usedIds, [pool[0].id]);
   tickThoughts(store, () => true, new Date(now.getTime() + 60000), () => 0);
-  assert.equal(store.snapshot().thoughts.nextAt, now.getTime() + 150 * 60000);
+  assert.equal(store.snapshot().thoughts.nextAt, now.getTime() + 15 * 60000);
 });
 
-test('six hours of active work gets only two or three occasional thoughts', t => {
+test('six hours of active work gets three to five occasional thoughts, including playful ones', t => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'buddy-thought-workday-'));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
   const store = new Store(path.join(directory, 'state.json'));
   const start = new Date(2026, 10, 6, 12).getTime(), times = [];
-  let now, seed = 42;
+  let now, seed = 42; const types = [];
   const random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
   for (let minute = 0; minute <= 360; minute++) {
     now = new Date(start + minute * 60000);
-    tickThoughts(store, (_item, check) => { if (!check) times.push(now.getTime()); return true; }, now, random);
+    tickThoughts(store, (item, check) => { if (!check) { times.push(now.getTime()); types.push(item.type); } return true; }, now, random);
   }
-  assert.ok(times.length >= 2 && times.length <= 3);
-  assert.ok(times[0] - start >= 120 * 60000 && times[0] - start <= 180 * 60000);
+  assert.ok(times.length >= 3 && times.length <= 5);
+  assert.ok(types.filter(type => ['joke', 'riddle', 'smile'].includes(type)).length >= 2);
+  assert.ok(times[0] - start >= 30 * 60000 && times[0] - start <= 60 * 60000);
   const gaps = times.slice(1).map((time, index) => (time - times[index]) / 60000);
-  assert.ok(gaps.every(gap => gap >= 120 && gap <= 180));
+  assert.ok(gaps.every(gap => gap >= 75 && gap <= 120));
+});
+
+test('upgrading the two-to-three-hour schedule brings a distant thought closer and keeps overdue thoughts due', t => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'buddy-thought-v3-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const store = new Store(path.join(directory, 'state.json'));
+  const now = new Date(2026, 10, 6, 12);
+  const history = { usedIds: [pool[0].id], lastType: pool[0].type, day: '2026-11-06', scheduleVersion: 2 };
+  store.saveThoughts({ ...history, nextAt: now.getTime() + 180 * 60000 });
+  tickThoughts(store, () => true, now, () => 0.5);
+  assert.equal(store.snapshot().thoughts.nextAt, now.getTime() + 45 * 60000);
+  assert.deepEqual(store.snapshot().thoughts.usedIds, history.usedIds);
+  store.saveThoughts({ ...history, nextAt: now.getTime() - 60000 });
+  tickThoughts(store, () => true, now, () => 0.5);
+  assert.equal(store.snapshot().thoughts.nextAt, now.getTime() - 60000);
+  assert.equal(tickThoughts(store, () => true, now, () => 0.5), true);
+});
+
+test('short thoughts stay six seconds, long jokes get more reading time, and duration is capped at twelve', () => {
+  assert.equal(thoughtDuration('A little joke.'), 6000);
+  assert.ok(thoughtDuration('x'.repeat(150)) > 6000);
+  assert.equal(thoughtDuration('x'.repeat(1000)), 12000);
+  for (const item of pool) {
+    const duration = thoughtDuration(item.text + (item.answer || ''));
+    assert.ok(duration >= 6000 && duration <= 12000);
+  }
 });
