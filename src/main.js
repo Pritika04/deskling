@@ -1,7 +1,7 @@
 'use strict';
 
 const path = require('node:path');
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen, dialog } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen, dialog, powerMonitor } = require('electron');
 const { Store } = require('./store');
 const { summary, mysteryStatus } = require('./renderer/domain');
 const makeTrayIcon = require('./tray-icon');
@@ -10,6 +10,7 @@ const { formatSurprise } = require('./mystery');
 const { startThoughts } = require('./thoughts');
 const { runShopSmoke } = require('./smoke-shop');
 const { RestClock, REST_AFTER } = require('./rest');
+const { nearbyGaze } = require('./gaze');
 const { popupPosition, bubbleWithMenu, mouthPoint } = require('./popup-position');
 const { chooseGreeting, giftSize, chooseEncouragement, encouragements } = require('./greetings');
 
@@ -29,6 +30,9 @@ let lastGreeting = '';
 let lastEncouragement = '';
 let bubbleSize = null;
 let presentationTimer;
+let gazeTimer;
+let gazeTrackingEnabled = false;
+let lastGaze = null;
 let celebrating = false;
 let restClock;
 let lastActivityPointer;
@@ -41,6 +45,14 @@ const POPUP_HEIGHT = 620;
 const shopSmoke = process.argv.includes('--shop-test');
 const smokeTest = process.argv.includes('--smoke-test') || shopSmoke;
 if (smokeTest) app.setPath('userData', path.join(app.getPath('temp'), `habit-buddy-smoke-${require('node:crypto').randomUUID()}`));
+
+function updateNearbyGaze() {
+  if (!gazeTrackingEnabled || !avatar || avatar.isDestroyed() || !avatar.isVisible()) return;
+  const gaze = nearbyGaze(screen.getCursorScreenPoint(), avatar.getBounds());
+  if (lastGaze && gaze.x === lastGaze.x && gaze.y === lastGaze.y) return;
+  lastGaze = gaze;
+  avatar.webContents.send('avatar:gaze', gaze);
+}
 
 function clampPosition(position, width, height) {
   const area = screen.getDisplayNearestPoint(position).workArea;
@@ -394,6 +406,10 @@ function registerIpc() {
       if (reducedMotion) stopRoll();
     }
   });
+  ipcMain.on('avatar:gaze-enabled', (event, enabled) => {
+    if (event.sender !== avatar.webContents || event.senderFrame !== avatar.webContents.mainFrame || typeof enabled !== 'boolean') return;
+    gazeTrackingEnabled = enabled; lastGaze = null;
+  });
   for (const [channel, action] of Object.entries({
     'habit:add': data => store.addHabit(data),
     'habit:edit': (id, data) => store.editHabit(id, data),
@@ -499,7 +515,7 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => { if (popup) showPopup(); });
-  app.on('before-quit', () => { quitting = true; restClock?.stop(); clearInterval(presentationTimer); clearTimeout(hatchTimer); cancelCelebration(); hideEffects(); stopRoll(); if (stopReminders) stopReminders(); if (stopThoughts) stopThoughts(); });
+  app.on('before-quit', () => { quitting = true; restClock?.stop(); clearInterval(gazeTimer); clearInterval(presentationTimer); clearTimeout(hatchTimer); cancelCelebration(); hideEffects(); stopRoll(); if (stopReminders) stopReminders(); if (stopThoughts) stopThoughts(); });
   app.on('window-all-closed', () => {});
   app.on('activate', () => { if (popup) showPopup(); });
   app.whenReady().then(async () => {
@@ -520,6 +536,7 @@ if (!app.requestSingleInstanceLock()) {
     effects = createWindow({ width: 320, height: 220, transparent: true, thickFrame: false, hasShadow: false, focusable: false, title: 'A little celebration' }, 'effects.html');
     effects.setIgnoreMouseEvents(true);
     registerIpc();
+    gazeTimer = setInterval(updateNearbyGaze, 100);
     avatar.once('ready-to-show', () => { syncAvatarSize(); avatar.showInactive(); });
     presentationTimer = setInterval(() => {
       try { restClock.check(); if (store.refreshRewards()) broadcast(); else syncAvatarSize(); }
@@ -539,7 +556,7 @@ if (!app.requestSingleInstanceLock()) {
     tray.on('click', showPopup);
     trayMenu();
     if (!smokeTest) stopReminders = startReminders(store, showReminder);
-    if (!smokeTest) stopThoughts = startThoughts(store, showThought);
+    if (!smokeTest) stopThoughts = startThoughts(store, showThought, { isComputerActive: () => powerMonitor.getSystemIdleTime() < 10 * 60 });
     for (const event of ['display-removed', 'display-metrics-changed']) screen.on(event, () => {
       stopRoll();
       const [x, y] = avatar.getPosition();
@@ -643,6 +660,31 @@ if (!app.requestSingleInstanceLock()) {
         avatar.webContents.send('avatar:reaction', { state: 'idle' }); showPopup();
       }
       const layoutOrigin = avatar.getBounds();
+      if (!reducedMotion) {
+        clearInterval(gazeTimer);
+        try {
+          avatar.webContents.send('avatar:reaction', { state: 'idle' });
+          avatar.webContents.send('avatar:gaze', { x: 2, y: 0 });
+          await new Promise(resolve => setTimeout(resolve, 200));
+          const rightGlance = await avatar.webContents.executeJavaScript("new DOMMatrixReadOnly(getComputedStyle(document.querySelector('.gaze-eyes')).transform).m41");
+          if (Math.abs(rightGlance - 2) > .1) throw new Error('Nearby gaze must shift the eyes gently');
+          onboardingFs.writeFileSync(path.join(onboardingCaptures, 'gaze-preview.png'), (await avatar.webContents.capturePage()).toPNG());
+          avatar.webContents.send('avatar:gaze', { x: 0, y: 0 });
+          await new Promise(resolve => setTimeout(resolve, 200));
+          if (Math.abs(await avatar.webContents.executeJavaScript("new DOMMatrixReadOnly(getComputedStyle(document.querySelector('.gaze-eyes')).transform).m41")) > .1) throw new Error('Eyes must return to centre');
+          for (const state of ['sleepy', 'cuddle', 'gift']) {
+            avatar.webContents.send('avatar:reaction', { state, hold: true });
+            avatar.webContents.send('avatar:gaze', { x: 2, y: 1.2 });
+            await new Promise(resolve => setTimeout(resolve, 180));
+            const neutral = await avatar.webContents.executeJavaScript("(() => { const m = new DOMMatrixReadOnly(getComputedStyle(document.querySelector('.gaze-eyes')).transform); return Math.abs(m.m41) < .1 && Math.abs(m.m42) < .1; })()");
+            if (!neutral) throw new Error('Gaze must pause while sleeping, reacting or showing a present');
+          }
+        } finally {
+          avatar.webContents.send('avatar:gaze', { x: 0, y: 0 });
+          avatar.webContents.send('avatar:reaction', { state: 'idle' });
+          gazeTimer = setInterval(updateNearbyGaze, 100);
+        }
+      }
       const layoutArea = screen.getDisplayMatching(layoutOrigin).workArea;
       placeAvatar({ x: layoutArea.x + Math.round(layoutArea.width / 2), y: layoutArea.y + Math.round(layoutArea.height / 2) });
       popupHeight = 620; positionPopup();

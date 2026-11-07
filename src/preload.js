@@ -49,6 +49,12 @@ contextBridge.exposeInMainWorld('buddy', {
   logProgress: (habitId, amount) => ipcRenderer.invoke('progress:log', habitId, amount),
   setMinutes: (habitId, total) => ipcRenderer.invoke('progress:minutes', habitId, total),
   motionPreference: reduced => ipcRenderer.send('avatar:motion', reduced),
+  enableGaze: enabled => ipcRenderer.send('avatar:gaze-enabled', enabled),
+  onGaze: callback => {
+    const listener = (_event, gaze) => callback(gaze);
+    ipcRenderer.on('avatar:gaze', listener);
+    return () => ipcRenderer.removeListener('avatar:gaze', listener);
+  },
   togglePopup: () => ipcRenderer.send('popup:toggle'),
   closePopup: () => ipcRenderer.send('popup:close'),
   fitPopup: height => ipcRenderer.send('popup:fit', height),

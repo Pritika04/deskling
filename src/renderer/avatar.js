@@ -5,6 +5,17 @@ let buddyState;
 let reactionTimer;
 let reacting = false;
 let resting = false;
+let gazeTarget = { x: 0, y: 0 };
+let gazeEnabled = false;
+function applyGaze() {
+  const enabled = document.body.dataset.state === 'idle' && !reacting && !resting && !pointer && resizing === null && !reducedMotion.matches && !document.hidden;
+  if (enabled !== gazeEnabled) { gazeEnabled = enabled; window.buddy.enableGaze(enabled); }
+  if (!enabled) gazeTarget = { x: 0, y: 0 };
+  document.documentElement.style.setProperty('--gaze-x', `${enabled ? gazeTarget.x : 0}px`);
+  document.documentElement.style.setProperty('--gaze-y', `${enabled ? gazeTarget.y : 0}px`);
+}
+window.buddy.onGaze(gaze => { gazeTarget = gaze; applyGaze(); });
+document.addEventListener('visibilitychange', applyGaze);
 function updateRest(rest) {
   resting = rest.sleeping;
   if (!reacting) idleState();
@@ -15,6 +26,7 @@ function idleState() {
   if (!buddyState) return;
   if (!buddyState.settings.hatched) {
     document.body.dataset.state = 'egg';
+    applyGaze();
     button.setAttribute('aria-label', 'Meet your buddy. Click to hatch.');
     button.title = 'Someone tiny is waiting. Click to hatch.';
     return;
@@ -22,14 +34,16 @@ function idleState() {
   const gift = HabitDomain.mysteryStatus(buddyState).available;
   button.setAttribute('aria-label', gift ? 'Open your mystery box. Drag to move.' : 'Open or close Habit Buddy. Drag to move.');
   button.title = gift ? 'A little surprise is waiting. Click to open.' : `${buddyState.settings.buddyName} · Click for your day · double-click for affection`;
-  if (gift) { document.body.dataset.state = 'gift'; return; }
+  if (gift) { document.body.dataset.state = 'gift'; applyGaze(); return; }
   document.body.dataset.state = resting ? 'sleepy' : 'idle';
+  applyGaze();
 }
 function react({ state, followUp, direction = 1, hold = false, duration = null }) {
   clearTimeout(reactionTimer);
   reacting = state !== 'idle';
   document.body.dataset.state = state;
   document.body.dataset.direction = direction;
+  applyGaze();
   if (state === 'idle') { idleState(); return; }
   if (hold) return;
   reactionTimer = setTimeout(() => {
@@ -45,6 +59,7 @@ button.addEventListener('pointerdown', event => {
   clearTimeout(clickTimer);
   clearTimeout(petTimer);
   pointer = { x: event.screenX, y: event.screenY, id: event.pointerId };
+  applyGaze();
   moved = false;
   button.setPointerCapture(event.pointerId);
   window.buddy.drag('start');
@@ -57,6 +72,7 @@ button.addEventListener('pointermove', event => {
 function finish() {
   if (!pointer) return;
   pointer = null;
+  applyGaze();
   window.buddy.drag('end');
 }
 button.addEventListener('pointerup', finish);
@@ -125,6 +141,7 @@ for (const edge of resizeEdges) {
   edge.addEventListener('pointerdown', event => {
     if (event.button !== 0) return;
     resizing = event.pointerId;
+    applyGaze();
     edge.setPointerCapture(event.pointerId);
     document.body.classList.add('resizing');
     window.buddy.resizeDrag('start', edge.dataset.edge);
@@ -135,6 +152,7 @@ for (const edge of resizeEdges) {
   const finishResize = event => {
     if (resizing !== event.pointerId) return;
     resizing = null;
+    applyGaze();
     document.body.classList.remove('resizing');
     window.buddy.resizeDrag('end');
   };
@@ -152,7 +170,7 @@ for (const edge of resizeEdges) {
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 window.buddy.motionPreference(reducedMotion.matches);
-reducedMotion.addEventListener('change', event => window.buddy.motionPreference(event.matches));
+reducedMotion.addEventListener('change', event => { window.buddy.motionPreference(event.matches); applyGaze(); });
 function scheduleExpression() {
   setTimeout(() => {
     if (!pointer && resizing === null && !reacting && document.body.dataset.state === 'idle' && !reducedMotion.matches && !document.hidden) {

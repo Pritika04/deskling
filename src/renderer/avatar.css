@@ -74,10 +74,11 @@ body[data-state="wink"] .eye-right { animation: blink 450ms ease-in-out 2; }
 .resize-edge.top { top: 0; }
 .resize-edge.bottom { bottom: 0; }
 body[data-state="gift"] .resize-edge { display: none; }
-.resize-edge::after { content: ''; position: absolute; top: 4px; left: calc(50% - 8px); width: 16px; height: 2px; border-radius: 2px; background: #70896a; opacity: 0; }
-body:hover .resize-edge::after, .resize-edge:focus-visible::after, body.resizing .resize-edge::after { opacity: .65; }
+.resize-edge::after { content: ''; position: absolute; top: 3px; left: calc(50% - 2px); width: 4px; height: 4px; border-radius: 50%; background: var(--accent); opacity: 0; }
+.resize-edge:hover::after, .resize-edge:focus-visible::after, body.resizing .resize-edge::after { opacity: .2; }
 .resize-edge:focus-visible { outline: 1px dashed #70896a; border-radius: 5px; }
 .eye { transform-box: fill-box; transform-origin: center; }
+.gaze-eyes { transform: translate(var(--gaze-x, 0px), var(--gaze-y, 0px)); transition: transform 160ms ease-out; }
 .blink .eye { animation: blink 180ms ease-in-out; }
 .wink .eye-right { animation: blink 320ms ease-in-out; }
 @keyframes blink {
@@ -85,6 +86,7 @@ body:hover .resize-edge::after, .resize-edge:focus-visible::after, body.resizing
   45%, 60% { transform: scaleY(.08); }
 }
 @media (prefers-reduced-motion: reduce) {
+  .gaze-eyes { transition: none; transform: none; }
   *, body[data-state] #character, body[data-state] .eye, body[data-state] .confetti { animation: none !important; }
   body[data-state="wink"] .eye-right { transform: scaleY(.12); }
 }

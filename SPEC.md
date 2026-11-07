@@ -40,6 +40,7 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 - Choices: **pineapple, star, plant** (more can be added later).
 - A one-time welcome starts as a small egg. Clicking makes it wobble and crack, reveals the buddy, and opens a dedicated naming view. A saved name completes the welcome; closing early lets the user resume later. Existing habits and history stay intact. Names can be changed in settings.
 - Hover briefly to pet the buddy, including while the habit menu is open; double-click for a random boop, cuddle, or wiggle. Single-click continues to open habits. Hover affection waits during celebrations or rewards. These interactions never log progress. The habit menu shows the buddy's name and is placed above, below, or beside the buddy without covering it.
+- While awake and idle, the eyes make a tiny, smooth glance toward a nearby cursor, easing back to centre outside a small radius. Gaze pauses for sleep, reactions, dragging, resizing, presents, and reduced-motion preferences. It never counts as user activity or resets the nap timer.
 - Drawn as **SVG animated with CSS**, original artwork with no external licensing.
 - All avatars share one **face rig** (eyes, mouth, cheeks) so each reaction is built once and works on every avatar.
 - The plant avatar may optionally have growth stages tied to daily progress (seed, sprout, sapling, tree, tree with fruit).
@@ -94,7 +95,7 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 - A new day starts fresh: completing that day's habits can earn a new box.
 - Reward content lives in `content/mystery.json`: quotes, motivation, and encouraging end-of-day notes, bundled offline.
 - Don't repeat the same content type two days in a row, and avoid repeating the same item until the pool is exhausted.
-- Separate `content/random.json` holds daytime jokes, riddles, kindness prompts, and playful thoughts. These appear as buddy speech bubbles with a fresh random wait of 30–150 minutes after each thought, between 8 AM and 10 PM, waiting for a quiet moment. Each day starts with a newly randomized wait; restarting on the same day keeps the scheduled time. Pause reminders also pauses these thoughts. Each pool has independent repeat protection, saved across restarts.
+- Separate `content/random.json` holds jokes, riddles, kindness prompts, and playful thoughts. The first thought and each following thought wait a random 2–3 hours. Thoughts can appear during late-night work too; they wait while the computer has had no input for ten minutes, or while the buddy is busy. Deadlines persist across restarts and midnight, and the old frequent schedule is replaced once on upgrade. Pause reminders also pauses these thoughts. Each pool has independent repeat protection, saved across restarts.
 
 ### 9. Themes
 - A few ready-made palettes plus a custom accent color picker.
