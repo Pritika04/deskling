@@ -8,6 +8,14 @@ const { Store } = require('../src/store');
 const { tickThoughts, pool, thoughtDuration, jokeSequence } = require('../src/thoughts');
 const { chooseSurprise } = require('../src/mystery');
 
+test('daytime content contains only jokes, with question and punchline preserved', () => {
+  const content = require('../content/random.json');
+  assert.equal(pool.length, 21);
+  assert.ok(content.every(item => item.type === 'joke'));
+  assert.ok(pool.every(item => item.type === 'joke' && item.text));
+  assert.ok(pool.some(item => item.answer));
+});
+
 test('thoughts wait, defer while busy or the computer is idle, respect pause, and persist their own bag', t => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'buddy-thought-'));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));

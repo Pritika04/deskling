@@ -72,10 +72,10 @@ test('a failed save cannot consume a mystery box', t => {
 });
 
 test('content entries load correctly and author/answer fields are included in the bubble', () => {
-  assert.equal(pool.length + randomPool.length, 100);
-  assert.equal(new Set([...pool, ...randomPool].map(item => item.id)).size, 100);
+  assert.ok(pool.length > 0 && randomPool.length > 0);
+  assert.equal(new Set([...pool, ...randomPool].map(item => item.id)).size, pool.length + randomPool.length);
   assert.ok(pool.every(item => ['quote', 'inspiration'].includes(item.type)));
-  assert.ok(randomPool.every(item => !['quote', 'inspiration'].includes(item.type)));
+  assert.ok(randomPool.every(item => item.type === 'joke'));
   for (const item of [...pool, ...randomPool]) {
     for (const key of ['id', 'type', 'title', 'text']) assert.ok(typeof item[key] === 'string' && item[key].trim());
     for (const key of ['author', 'answer']) if (item[key] !== undefined) assert.equal(typeof item[key], 'string');

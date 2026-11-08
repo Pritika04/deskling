@@ -115,4 +115,10 @@ function bubbleWithMenu(buddy, area, preferred, menu = null, mouth = mouthPoint(
   }
   return best && { ...best, menu: bestMenu };
 }
-module.exports = { popupPosition, bubblePosition, bubbleLayout, bubbleWithMenu, mouthPoint };
+function shouldRestorePopup(requested, startedAt, idleSeconds, now = Date.now()) {
+  if (!requested || !Number.isFinite(startedAt) || !Number.isFinite(idleSeconds) || idleSeconds < 0 || now < startedAt) return false;
+  // OS idle time is rounded to whole seconds. Restore only if the user has
+  // stayed idle since completing the habit, rather than resumed other work.
+  return idleSeconds * 1000 + 1000 >= now - startedAt;
+}
+module.exports = { popupPosition, bubblePosition, bubbleLayout, bubbleWithMenu, mouthPoint, shouldRestorePopup };

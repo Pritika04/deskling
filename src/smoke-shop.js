@@ -24,7 +24,11 @@ async function runShopSmoke({ avatar, popup, store, closeReward, hideEffects, br
     };
     q('#shop-toggle').click();
     if (q('#collection').hidden || !q('#today').hidden || !q('#history').hidden || !q('#settings').hidden) throw new Error('Shop must be its own view');
-    if (q('#accessory-grid').children.length !== BuddyWardrobe.catalog.length) throw new Error('Shop catalog is incomplete');
+    if (q('#accessory-grid').children.length !== BuddyWardrobe.catalog.filter(item => !item.retired).length + 1) throw new Error('Shop catalog is incomplete');
+    const prices = [...q('#accessory-grid').children].map(card => Number(card.querySelector('small').textContent.split(' ')[0]));
+    if (prices.some((price, index) => index && price < prices[index - 1])) throw new Error('Shop must sort by increasing price');
+    if (!q('#next-milestone').textContent.includes('+1 coin bonus')) throw new Error('Next milestone is missing');
+    q('[data-item="daisy-crown"]').click();
     if (!q('#collection-preview [data-accessory="daisy-crown"]')) throw new Error('Try-on preview is missing');
   })()`);
   if (await avatar.webContents.executeJavaScript("document.querySelectorAll('#character [data-accessory]').length") !== 0) throw new Error('Trying on an unowned item must not dress the desktop buddy');
@@ -43,9 +47,9 @@ async function runShopSmoke({ avatar, popup, store, closeReward, hideEffects, br
       q('#collection-action').click();
       await waitFor(async () => (await window.buddy.getState()).collection.owned.includes(id) && !busy);
     }
-    if ((await window.buddy.getState()).collection.coins !== 22) throw new Error('Shop charged incorrect prices');
+    if ((await window.buddy.getState()).collection.coins !== 1) throw new Error('Shop charged incorrect prices');
     await window.buddy.buyAccessory('daisy-crown');
-    if ((await window.buddy.getState()).collection.coins !== 22) throw new Error('Duplicate purchase charged again');
+    if ((await window.buddy.getState()).collection.coins !== 1) throw new Error('Duplicate purchase charged again');
     q('#wardrobe-tab').click();
     q('#accessory-grid button:not([data-item])').click();
     q('#collection-action').click();
@@ -65,6 +69,50 @@ async function runShopSmoke({ avatar, popup, store, closeReward, hideEffects, br
   popup.hide(); avatar.webContents.send('avatar:reaction', { state: 'idle' });
   await new Promise(resolve => setTimeout(resolve, 120));
   fs.writeFileSync(path.join(captureDir, 'outfit-preview.png'), (await avatar.webContents.capturePage()).toPNG());
+  const original = store.snapshot();
+  const { localDay, shiftDay, summary } = require('./renderer/domain');
+  const today = localDay(new Date(), original.settings.dayStartHour);
+  const fixture = store.snapshot(); fixture.collection.coins = 200; store.commit(fixture); broadcast();
+  showPopup();
+  await popup.webContents.executeJavaScript(`(() => {
+    const q = selector => document.querySelector(selector);
+    q('#shop-toggle').click(); q('[data-category="accessories"]').click();
+    if (!q('[data-item="round-glasses"]') || !q('[data-item="round-glasses"]').textContent.includes('Yours')) throw new Error('Owned glasses must remain visible in the shop');
+    if (q('[data-category="companions"]') || q('[data-item="garden-sprout"]') || q('#wardrobe-slots').children.length !== 4) throw new Error('Companions must be removed from the shop and wardrobe');
+    if (BuddyWardrobe.catalog.find(item => item.id === 'berry-beret').price !== 7) throw new Error('Berry beret must cost seven coins');
+  })()`);
+  for (const id of ['round-glasses', 'mushroom-cap', 'strawberry-bonnet', 'moon-crown']) {
+    await popup.webContents.executeJavaScript(`document.querySelector('[data-item="${id}"]').click()`);
+    if (!await popup.webContents.executeJavaScript(`!!document.querySelector('#collection-preview [data-accessory="${id}"]')`)) throw new Error('Accessory preview missing: ' + id);
+    await new Promise(resolve => setTimeout(resolve, 180));
+    fs.writeFileSync(path.join(captureDir, `${id}-preview.png`), (await popup.webContents.capturePage()).toPNG());
+  }
+  const habit = store.addHabit({ name: 'Repair check', type: 'checkbox' });
+  const repairFixture = store.snapshot();
+  repairFixture.habits = [habit];
+  repairFixture.days = Object.fromEntries([-5, -4, -3].map(offset => [shiftDay(today, offset), [{ ...habit, amount: 1 }]]));
+  Object.assign(repairFixture.collection, { coins: 10, repairs: [], earnings: [], rewardedDays: [-5, -4, -3].map(offset => shiftDay(today, offset)), milestones: [`${shiftDay(today, -5)}:3`] });
+  store.commit(repairFixture); broadcast();
+  await popup.webContents.executeJavaScript(`(async () => {
+    const q = selector => document.querySelector(selector);
+    q('#shop-toggle').click(); q('[data-category="streak"]').click();
+    if (q('#accessory-grid').children.length !== 1 || !q('#try-on-caption').textContent.includes('Restore your 3-day streak for 6 coins') || q('#collection-action').disabled) throw new Error('Repair must explain the exact result and price');
+  })()`);
+  await new Promise(resolve => setTimeout(resolve, 180));
+  fs.writeFileSync(path.join(captureDir, 'repair-preview.png'), (await popup.webContents.capturePage()).toPNG());
+  await popup.webContents.executeJavaScript(`(async () => {
+    document.querySelector('#collection-action').click();
+    const deadline = Date.now() + 5000;
+    while (!(await window.buddy.getState()).collection.repairs.length || busy) {
+      if (Date.now() > deadline) throw new Error('Repair purchase timed out');
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+    if (!document.querySelector('#collection-action').disabled) throw new Error('A restored streak cannot buy a duplicate repair');
+    if (!document.querySelector('#try-on-caption').textContent.includes('Used this month · Available again') || document.querySelector('#collection-action').textContent !== 'Used this month') throw new Error('Monthly repair use must show the next available date');
+  })()`);
+  if (store.snapshot().collection.coins !== 4 || summary(store.snapshot()).current !== 3 || store.snapshot().days[shiftDay(today, -1)]) throw new Error('Repair must restore the streak without rewards or fabricated progress');
+  store.commit(original); broadcast(); popup.hide();
+  console.log('TIER SHOP CHECK PASSED: price sorting, filters, owned glasses, redesigned accessories, and monthly six-coin streak repair.');
   console.log('SHOP UI CHECK PASSED: previews, purchases, wardrobe combinations on all three buddies, and persistence.');
 }
 module.exports = { runShopSmoke };

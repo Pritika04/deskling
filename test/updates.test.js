@@ -67,6 +67,16 @@ test('offline checks and unpublished releases stay nonfatal and can be retried',
   updater.checkForUpdates = async () => { updater.emit('update-not-available', { version: '0.1.0' }); return {}; };
   await manager.check(); assert.equal(manager.snapshot().stage, 'up-to-date');
 });
+test('empty GitHub release feeds and missing release metadata are not connection errors', async t => {
+  const { updater, manager } = setup(t);
+  updater.checkForUpdates = async () => { throw Object.assign(new Error('No published versions on GitHub'), { code: 'ERR_XML_MISSED_ELEMENT' }); };
+  await manager.check(); assert.equal(manager.snapshot().stage, 'unavailable');
+  assert.match(manager.snapshot().message, /No published updates yet/);
+  assert.doesNotMatch(manager.snapshot().message, /connection/);
+  updater.checkForUpdates = async () => { throw Object.assign(new Error('Cannot find latest.yml: HTTP 404'), { code: 'ERR_UPDATER_CHANNEL_FILE_NOT_FOUND' }); };
+  await manager.check(); assert.equal(manager.snapshot().stage, 'unavailable');
+  assert.match(manager.snapshot().message, /not available for this release/);
+});
 
 test('a failed or corrupt download is never ready to install, and retry succeeds', async t => {
   const { updater, manager } = setup(t);

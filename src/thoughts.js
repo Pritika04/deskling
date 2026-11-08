@@ -1,6 +1,6 @@
 'use strict';
 const { chooseSurprise } = require('./mystery');
-const pool = require('../content/random.json');
+const pool = require('../content/random.json').filter(item => item.type === 'joke');
 const { localDay } = require('./renderer/domain');
 const MAX_GAP = 120 * 60 * 1000;
 const SCHEDULE_VERSION = 3;

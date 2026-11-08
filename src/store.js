@@ -3,10 +3,10 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
-const { localDay, todayEntries, daySummary, mysteryStatus } = require('./renderer/domain');
+const { localDay, todayEntries, daySummary, mysteryStatus, summary, milestoneDays } = require('./renderer/domain');
 const { chooseSurprise } = require('./mystery');
 const { catalog } = require('./renderer/wardrobe');
-const { initialCollection, validateCollection, validateOutfit, accrueCoins } = require('./collection');
+const { initialCollection, validateCollection, validateOutfit, accrueCoins, migrateEconomy } = require('./collection');
 
 const TYPES = ['count', 'checkbox', 'minutes', 'percent'];
 const CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -93,6 +93,7 @@ class Store {
         if (!Object.hasOwn(this.state, 'reminderQueue')) this.state.reminderQueue = [];
         if (!Object.hasOwn(this.state, 'mystery')) this.state.mystery = { days: {}, usedIds: [], lastType: null };
         if (!Object.hasOwn(this.state, 'collection')) this.state.collection = initialCollection();
+        if (this.state.collection?.equipped && !Object.hasOwn(this.state.collection.equipped, 'companion')) this.state.collection.equipped.companion = null;
         if (!Object.hasOwn(this.state, 'welcomes')) this.state.welcomes = { day: null, lastSeenAt: 0, lastGreetingAt: 0, lastMessage: '' };
         if (!Object.hasOwn(this.state, 'thoughts')) this.state.thoughts = { usedIds: [], lastType: null, nextAt: 0, day: null };
         if (this.state.thoughts && !Object.hasOwn(this.state.thoughts, 'day')) this.state.thoughts.day = null;
@@ -111,6 +112,7 @@ class Store {
         }
       }
       validateState(this.state);
+      migrateEconomy(this.state, this.now());
     } catch (error) {
       // Never silently replace existing data that cannot be read.
       if (error.code !== 'ENOENT') throw new Error(`Could not load ${filePath}: ${error.message}`);
@@ -157,8 +159,9 @@ class Store {
   }
 
   buyAccessory(id) {
+    if (id === 'streak-repair') return this.repairStreak();
     const item = catalog.find(entry => entry.id === id);
-    if (!item) throw new Error('That accessory is not in the shop.');
+    if (!item || item.retired) throw new Error('That accessory is not in the shop.');
     if (!this.state.settings.hatched) throw new Error('Meet your buddy first.');
     const next = this.snapshot();
     accrueCoins(next, this.now());
@@ -167,6 +170,30 @@ class Store {
     next.collection.coins -= item.price;
     next.collection.owned.push(id);
     next.collection.equipped[item.slot] = id;
+    return this.commit(next);
+  }
+
+  repairStreak() {
+    const next = this.snapshot(), progress = summary(next, this.now());
+    if (progress.repairAllowance.used) throw new Error('You have already used your Streak Repair this month. It becomes available again next month.');
+    if (!next.settings.hatched || !progress.repair) throw new Error('No broken streak needs repairing right now.');
+    if (next.collection.coins < 6) throw new Error('Streak Repair costs 6 coins.');
+    const repair = progress.repair;
+    next.collection.coins -= 6;
+    (next.collection.repairs ||= []).push({ id: repair.id, from: repair.from, through: repair.through, boughtOn: localDay(this.now()) });
+    const restored = summary(next, this.now());
+    // Joining an old and a new run never pays retroactive milestone rewards.
+    for (const day of milestoneDays(restored.current)) {
+      const key = `${restored.streakStart}:${day}`;
+      if (!next.collection.milestones.includes(key)) next.collection.milestones.push(key);
+    }
+    return this.commit(next);
+  }
+
+  markGraceNotice(day) {
+    const next = this.snapshot();
+    if ((next.collection.graceNotices || []).includes(day)) return next;
+    (next.collection.graceNotices ||= []).push(day);
     return this.commit(next);
   }
 

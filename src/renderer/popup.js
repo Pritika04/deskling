@@ -14,8 +14,13 @@ let collectionTab = 'shop';
 let collectionSlot = 'hat';
 let selectedAccessory = null;
 let draftOutfit = null;
+let shopCategory = 'all';
 const clockSync = [];
 let updateInfo = null;
+function describeEarning(reward) {
+  const coins = `${reward.coins} ${reward.coins === 1 ? 'coin' : 'coins'}`;
+  return reward.kind === 'streak' ? `${coins} as a bonus for your ${reward.streak}-day streak.` : `${coins} for completing all your habits.`;
+}
 function renderUpdates(info) {
   updateInfo = info;
   $('#app-version').textContent = `Deskling ${info.currentVersion}`;
@@ -250,11 +255,13 @@ function render(next = state) {
 
 function openCollection(tab = 'shop') {
   collectionTab = tab;
-  selectedAccessory = tab === 'shop' ? BuddyWardrobe.catalog.find(item => !state.collection.owned.includes(item.id))?.id || BuddyWardrobe.catalog[0].id : null;
+  shopCategory = 'all';
+  const items = BuddyWardrobe.shopItems(state.collection);
+  selectedAccessory = tab === 'shop' ? (items.find(item => !state.collection.owned.includes(item.id)) || items[0])?.id : null;
   draftOutfit = { ...state.collection.equipped };
   if (selectedAccessory) {
     const item = BuddyWardrobe.catalog.find(entry => entry.id === selectedAccessory);
-    draftOutfit[item.slot] = item.id;
+    if (item) draftOutfit[item.slot] = item.id;
   }
   showView('collection');
   $(tab === 'shop' ? '#shop-tab' : '#wardrobe-tab').focus({ preventScroll: true });
@@ -265,18 +272,35 @@ function renderCollection() {
   const collection = state.collection;
   draftOutfit ||= { ...collection.equipped };
   const shop = collectionTab === 'shop';
+  const progress = HabitDomain.summary(state), milestone = HabitDomain.nextMilestone(progress.current);
+  $('#next-milestone').textContent = `${milestone.remaining} more completed ${milestone.remaining === 1 ? 'day' : 'days'} until your +${milestone.coins} coin bonus.`;
+  $('#shop-filters').hidden = !shop; $('#shop-order').hidden = !shop;
+  document.querySelectorAll('[data-category]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.category === shopCategory)));
   $('#collection-title').textContent = shop ? 'Little treasures.' : `${state.settings.buddyName}’s wardrobe.`;
   const balanceText = `${collection.coins} ${collection.coins === 1 ? 'coin' : 'coins'}`;
   if ($('#coin-total').textContent !== balanceText) $('#coin-total').textContent = balanceText;
+  const earnings = HabitDomain.coinEarnings(state);
+  const earned = earnings.reduce((sum, reward) => sum + reward.coins, 0);
+  $('#collection-earnings').hidden = !shop || !earnings.length;
+  $('#collection-earnings').replaceChildren(node('span', `You earned ${earned} ${earned === 1 ? 'coin' : 'coins'} today.`), ...earnings.map(reward => node('span', describeEarning(reward))));
   $('#shop-tab').setAttribute('aria-pressed', String(shop)); $('#wardrobe-tab').setAttribute('aria-pressed', String(!shop));
-  $('#collection-preview').innerHTML = BuddyWardrobe.preview(state.settings.avatar, draftOutfit);
+  const repairing = shop && selectedAccessory === 'streak-repair';
+  $('#collection-preview').innerHTML = repairing ? BuddyWardrobe.icon('streak-repair') : BuddyWardrobe.preview(state.settings.avatar, draftOutfit);
   $('#wardrobe-slots').hidden = shop;
   const action = $('#collection-action');
   const selected = BuddyWardrobe.catalog.find(item => item.id === selectedAccessory);
-  if (shop && selected) {
+  if (repairing) {
+    const repair = progress.repair;
+    const used = progress.repairAllowance.used;
+    const nextDate = new Intl.DateTimeFormat(undefined, { month: 'long', day: 'numeric' }).format(new Date(`${progress.repairAllowance.nextAvailable}T12:00:00`));
+    $('#try-on-caption').textContent = used ? `Used this month · Available again ${nextDate}. One repair per calendar month; unused repairs do not carry over.` : repair ? `Restore your ${repair.count}-day streak for 6 coins. One repair per month. No missed-day coins or backdated bonuses. Available through ${HabitDomain.shiftDay(repair.brokenOn, 6)}.` : progress.current ? 'Your streak is safe. One repair per month is here if you need it.' : 'One repair per calendar month, within seven days after a streak breaks. Unused repairs do not carry over.';
+    action.textContent = used ? 'Used this month' : repair ? `Restore ${repair.count}-day streak · 6 coins` : 'No repair needed';
+    action.disabled = busy || !repair || collection.coins < 6;
+    if (repair && collection.coins < 6) action.textContent = `Save ${6 - collection.coins} more coins`;
+  } else if (shop && selected) {
     const owned = collection.owned.includes(selected.id), wearing = collection.equipped[selected.slot] === selected.id;
     const needed = selected.price - collection.coins;
-    $('#try-on-caption').textContent = `${owned ? 'Yours' : 'Trying on'} · ${selected.name}`;
+    $('#try-on-caption').textContent = `${owned ? 'Yours' : 'Trying on'} · ${selected.name}. ${selected.description}`;
     action.textContent = owned ? wearing ? 'Wearing it' : 'Wear this' : needed > 0 ? `Save ${needed} more ${needed === 1 ? 'coin' : 'coins'}` : `Buy for ${selected.price} coins`;
     action.disabled = busy || (owned ? wearing : needed > 0);
   } else {
@@ -285,28 +309,28 @@ function renderCollection() {
     action.disabled = busy || JSON.stringify(draftOutfit) === JSON.stringify(collection.equipped);
   }
   const slotList = $('#wardrobe-slots'); slotList.replaceChildren();
-  for (const [id, label] of Object.entries(BuddyWardrobe.slots)) {
+  for (const [id, label] of Object.entries(BuddyWardrobe.visibleSlots)) {
     const button = node('button', label); button.type = 'button'; button.setAttribute('aria-pressed', String(collectionSlot === id));
     button.addEventListener('click', () => { collectionSlot = id; renderCollection(); $('#wardrobe-slots button[aria-pressed="true"]').focus({ preventScroll: true }); }); slotList.append(button);
   }
   const grid = $('#accessory-grid'); grid.replaceChildren();
   if (!shop) {
     const none = node('button', undefined, 'accessory-card'); none.type = 'button';
-    const emptyLabel = { hat: 'No hat', eyes: 'No glasses', neck: 'No scarf or bow', hand: 'No umbrella' }[collectionSlot];
+    const emptyLabel = { hat: 'No hat', eyes: 'No glasses', neck: 'No scarf or bow', hand: 'No umbrella', companion: 'No companion' }[collectionSlot];
     none.append(node('span', '–', 'nothing-art'), node('strong', emptyLabel), node('small', 'Keep it simple'));
     none.setAttribute('aria-pressed', String(draftOutfit[collectionSlot] === null));
     none.addEventListener('click', () => { draftOutfit[collectionSlot] = null; renderCollection(); $('#collection-action').focus({ preventScroll: true }); }); grid.append(none);
   }
-  const items = BuddyWardrobe.catalog.filter(item => shop || (item.slot === collectionSlot && collection.owned.includes(item.id)));
+  const items = shop ? BuddyWardrobe.shopItems(collection, shopCategory) : BuddyWardrobe.catalog.filter(item => !item.retired && item.slot === collectionSlot && collection.owned.includes(item.id));
   for (const item of items) {
     const card = node('button', undefined, 'accessory-card'); card.type = 'button'; card.dataset.item = item.id;
     const art = node('span', undefined, 'accessory-art');
     art.innerHTML = BuddyWardrobe.icon(item.id);
-    card.append(art, node('strong', item.name), node('small', collection.owned.includes(item.id) ? 'Yours' : `${item.price} coins`));
-    card.setAttribute('aria-label', `Try on ${item.name}${collection.owned.includes(item.id) ? ', yours' : `, ${item.price} coins`}`);
+    card.append(art, node('strong', item.name), node('small', item.id === 'streak-repair' && progress.repairAllowance.used ? 'Used this month' : collection.owned.includes(item.id) ? 'Yours' : `${item.price} coins`));
+    card.setAttribute('aria-label', `${item.id === 'streak-repair' ? 'Preview' : 'Try on'} ${item.name}${collection.owned.includes(item.id) ? ', yours' : `, ${item.price} coins`}`);
     card.setAttribute('aria-pressed', String(shop ? selectedAccessory === item.id : draftOutfit[item.slot] === item.id));
     card.addEventListener('click', () => {
-      if (shop) { selectedAccessory = item.id; draftOutfit = { ...collection.equipped, [item.slot]: item.id }; }
+      if (shop) { selectedAccessory = item.id; draftOutfit = { ...collection.equipped }; if (item.slot) draftOutfit[item.slot] = item.id; }
       else draftOutfit[item.slot] = item.id;
       renderCollection(); document.querySelector('main').scrollTo({ top: 0, behavior: 'instant' });
       $('#collection-action').focus({ preventScroll: true });
@@ -314,19 +338,29 @@ function renderCollection() {
     grid.append(card);
   }
   if (!shop && !items.length) grid.append(node('p', 'Your first little treasure is waiting in the shop.', 'muted wardrobe-empty'));
+  if (shop && !items.length) grid.append(node('p', 'No treasures in this category yet.', 'muted wardrobe-empty'));
 }
 
 $('#shop-toggle').addEventListener('click', () => openCollection());
+document.querySelectorAll('[data-category]').forEach(button => button.addEventListener('click', () => {
+  shopCategory = button.dataset.category;
+  const items = BuddyWardrobe.shopItems(state.collection, shopCategory);
+  selectedAccessory = items[0]?.id || null;
+  draftOutfit = { ...state.collection.equipped };
+  if (items[0]?.slot) draftOutfit[items[0].slot] = items[0].id;
+  renderCollection();
+}));
 $('#shop-tab').addEventListener('click', () => openCollection('shop'));
 $('#wardrobe-tab').addEventListener('click', () => openCollection('wardrobe'));
 $('#collection-action').addEventListener('click', async () => {
   if (busy) return;
   busy = true; renderCollection();
   const item = BuddyWardrobe.catalog.find(entry => entry.id === selectedAccessory);
+  const repairing = collectionTab === 'shop' && selectedAccessory === 'streak-repair';
   const buy = collectionTab === 'shop' && item && !state.collection.owned.includes(item.id);
   try {
-    const next = await perform(() => buy ? window.buddy.buyAccessory(item.id) : window.buddy.equipOutfit(draftOutfit));
-    if (next) { draftOutfit = { ...next.collection.equipped }; render(next); message(buy ? `${item.name} is yours. Looking lovely!` : 'Looking lovely.'); }
+    const next = await perform(() => repairing ? window.buddy.buyAccessory('streak-repair') : buy ? window.buddy.buyAccessory(item.id) : window.buddy.equipOutfit(draftOutfit));
+    if (next) { draftOutfit = { ...next.collection.equipped }; render(next); message(repairing ? 'Your streak is restored. A fresh little start.' : buy ? `${item.name} is yours. Looking lovely!` : 'Looking lovely.'); }
   } finally { busy = false; renderCollection(); }
 });
 async function moveHabit(id, targetId, after = false) {
@@ -344,7 +378,7 @@ function renderCalendar(data) {
   $('#calendar-title').textContent = calendar.title;
   $('#month-caption').textContent = new Intl.DateTimeFormat(undefined, { month: 'short' }).format(new Date(`${data.today}T12:00:00`));
   $('#calendar-toggle').textContent = calendarMode === 'month' ? 'See whole year' : 'Back to this month';
-  $('#streak-caption').textContent = data.current ? `${data.current} ${data.current === 1 ? 'day' : 'days'} of completing your habits. A lovely little rhythm.` : 'Each day is a fresh start.';
+  $('#streak-caption').textContent = data.frozen ? `${data.current}-day streak · A little pause. Complete your habits today to keep it safe.` : data.current ? `${data.current} ${data.current === 1 ? 'day' : 'days'} of completing your habits. A lovely little rhythm.` : data.repair ? 'A fresh start, or restore your recent streak in the shop.' : 'Each day is a fresh start.';
   $('#calendar-weekdays').hidden = calendarMode === 'year';
   const heatmap = $('#heatmap'); heatmap.replaceChildren();
   heatmap.classList.toggle('year', calendarMode === 'year');
@@ -538,8 +572,9 @@ window.buddy.onReward(item => {
   $('#reward-title').textContent = item.title;
   $('#reward-text').textContent = item.text;
   $('#reward-author').textContent = item.author ? `— ${item.author}` : '';
-  $('#reward-coins').hidden = !state.collection.rewardedDays.includes(HabitDomain.localDay(new Date(), state.settings.dayStartHour));
-  $('#reward-coin-text').textContent = `Daily reward: +1 coin · Balance: ${state.collection.coins} ${state.collection.coins === 1 ? 'coin' : 'coins'}`;
+  const earnings = HabitDomain.coinEarnings(state), earned = earnings.reduce((total, reward) => total + reward.coins, 0);
+  $('#reward-coins').hidden = !earnings.length;
+  $('#reward-coin-text').textContent = `You earned ${earned} ${earned === 1 ? 'coin' : 'coins'} today.\n` + earnings.map(describeEarning).join('\n') + `\nYour balance: ${state.collection.coins} ${state.collection.coins === 1 ? 'coin' : 'coins'}.`;
   const labels = rewardButtonLabels.filter(label => label !== lastRewardButtonLabel);
   lastRewardButtonLabel = labels[Math.floor(Math.random() * labels.length)];
   $('#reward-close').textContent = lastRewardButtonLabel;

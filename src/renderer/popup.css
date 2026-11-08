@@ -219,6 +219,26 @@ footer { display: flex; flex-shrink: 0; align-items: center; justify-content: ce
 .nothing-art { height: 63px; display: grid; place-items: center; font: 28px Georgia, serif; color: var(--muted); }
 .wardrobe-empty { grid-column: 1 / -1; font-size: 11px; text-align: center; padding: 12px; }
 .reward-coins { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; color: var(--accent); margin: 14px 0 0; }
+#reward-coin-text { white-space: pre-line; line-height: 1.8; }
+#collection-earnings span { display: block; line-height: 1.7; }
+#collection-earnings span:first-child { color: var(--ink); margin-bottom: 2px; }
+.crown-aura { animation: moon-glow 7s ease-in-out infinite; }
+.crown-charms { transform-box: fill-box; transform-origin: center top; animation: charm-sway 5s ease-in-out infinite; }
+@keyframes moon-glow { 0%, 100% { opacity: .08; } 50% { opacity: .23; } }
+@keyframes charm-sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+@media (prefers-reduced-motion: reduce) { .crown-aura, .crown-charms { animation: none; } }
+#next-milestone { margin: 0 0 14px; line-height: 1.6; }
+#shop-filters { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+#shop-filters button { border-radius: 16px; font-size: 10px; padding: 6px 9px; background: transparent; }
+#shop-filters button[aria-pressed="true"] { background: var(--soft); border-color: var(--accent); }
+#shop-order { font-size: 10px; margin: 0 0 10px; }
+.garden-flower { transform-box: fill-box; transform-origin: center bottom; animation: flower-bloom 18s ease-in-out infinite; }
+.celestial-stars { animation: star-twinkle 6s ease-in-out infinite; }
+.umbrella-rain { animation: quiet-rain 7s ease-in-out infinite; }
+@keyframes flower-bloom { 0%, 60%, 100% { transform: scale(.2); opacity: .2; } 70%, 90% { transform: scale(1); opacity: 1; } }
+@keyframes star-twinkle { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+@keyframes quiet-rain { 0%, 70%, 100% { opacity: 0; transform: translateY(-3px); } 80% { opacity: .7; } 95% { opacity: 0; transform: translateY(7px); } }
+@media (prefers-reduced-motion: reduce) { .garden-flower, .celestial-stars, .umbrella-rain { animation: none; } }
 #reward:not([hidden]) { animation: reward-arrive .45s ease-out; }
 @keyframes reward-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { #reward { animation: none !important; } }

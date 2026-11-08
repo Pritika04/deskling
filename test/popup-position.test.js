@@ -1,4 +1,5 @@
 'use strict';
+const { shouldRestorePopup } = require('../src/popup-position');
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { popupPosition, bubbleWithMenu, mouthPoint } = require('../src/popup-position');
@@ -65,4 +66,14 @@ test('a tall menu makes room near the mouth instead of pushing speech far away',
   assert.ok(layout.menu.height < menu.height);
   assert.equal(overlaps(layout.bubble, layout.menu), false);
   assert.deepEqual(layout.mouth, mouthPoint(pet));
+});
+
+test('delayed menu returns never interrupt resumed computer activity', () => {
+  assert.equal(shouldRestorePopup(true, 1000, 8, 9000), true);
+  assert.equal(shouldRestorePopup(true, 1000, 7, 9000), true);
+  assert.equal(shouldRestorePopup(true, 1000, 0, 9000), false);
+  assert.equal(shouldRestorePopup(true, 1000, 3, 9000), false);
+  assert.equal(shouldRestorePopup(false, 1000, 8, 9000), false);
+  assert.equal(shouldRestorePopup(true, null, 8, 9000), false);
+  assert.equal(shouldRestorePopup(true, 1000, 8, 500), false);
 });

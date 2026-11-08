@@ -36,14 +36,17 @@ class UpdateManager {
     this.state = { ...this.state, ...patch }; this.onChange(this.snapshot());
   }
   fail(error) {
-    const missing = /ERR_UPDATER_NO_PUBLISHED_VERSIONS|ERR_UPDATER_LATEST_VERSION_NOT_FOUND|404/.test(`${error?.code || ''} ${error?.message || ''}`);
+    const detail = `${error?.code || ''} ${error?.message || ''}`;
+    const missing = /ERR_UPDATER_NO_PUBLISHED_VERSIONS|ERR_UPDATER_LATEST_VERSION_NOT_FOUND|No published versions on GitHub|404/i.test(detail);
+    const channelMissing = /ERR_UPDATER_CHANNEL_FILE_NOT_FOUND/.test(detail);
     const installing = this.state.stage === 'installing';
     if (installing) this.ready = false;
-    let message = 'Could not finish the update. Check your connection and try again.';
-    if (missing) message = 'No published updates yet. You can keep using Deskling.';
+    let message = this.state.stage === 'downloading' ? 'Could not download the update. Check your connection and try again later.' : 'Could not check for updates. Check your connection and try again later.';
+    if (channelMissing) message = 'Updates are not available for this release yet. You can keep using Deskling.';
+    else if (missing) message = 'No published updates yet. You can keep using Deskling.';
     else if (/CHECKSUM|SIGNATURE|sha512/i.test(`${error?.code || ''} ${error?.message || ''}`)) message = 'The update download could not be verified. Please try again later.';
     else if (installing) message = 'Could not install the update. Please try again.';
-    this.set({ stage: this.ready ? 'downloaded' : this.state.version ? 'available' : missing ? 'unavailable' : 'error', percent: this.ready ? 100 : 0,
+    this.set({ stage: this.ready ? 'downloaded' : this.state.version ? 'available' : missing || channelMissing ? 'unavailable' : 'error', percent: this.ready ? 100 : 0,
       message });
   }
   async check() {

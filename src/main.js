@@ -5,7 +5,7 @@ const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen, dialog, po
 const { Store } = require('./store');
 const { configureAppIdentity, APP_ID, DATA_FILE } = require('./app-identity');
 const { UpdateManager } = require('./updates');
-const { summary, mysteryStatus } = require('./renderer/domain');
+const { summary, mysteryStatus, graceNotice } = require('./renderer/domain');
 const makeTrayIcon = require('./tray-icon');
 const { startReminders } = require('./reminders');
 const { formatSurprise } = require('./mystery');
@@ -16,7 +16,7 @@ const { RestClock, restAfterFor } = require('./rest');
 const { nearbyGaze } = require('./gaze');
 const { WelcomeManager } = require('./welcome');
 const { TreatQueue, TreatPicker } = require('./treats');
-const { popupPosition, bubbleWithMenu, mouthPoint } = require('./popup-position');
+const { popupPosition, bubbleWithMenu, mouthPoint, shouldRestorePopup } = require('./popup-position');
 const { chooseGreeting, giftSize, chooseEncouragement, encouragements } = require('./greetings');
 
 let avatar, popup, effects, tray, store, drag, resize;
@@ -58,6 +58,7 @@ let reopenAfterTreat = false;
 let effectState = null;
 let celebrationTimer;
 let reopenAfterCelebration = false;
+let popupReturnStartedAt = null;
 let popupHeight = 340;
 const POPUP_WIDTH = 380;
 const POPUP_HEIGHT = 620;
@@ -144,6 +145,7 @@ function flushTreat(reopen = false) {
   if (!snack) return false;
   treatPlaying = true;
   reopenAfterTreat = reopen;
+  const returnStartedAt = popupReturnStartedAt;
   const { food, message } = treatPicker.next();
   avatar.webContents.send('avatar:reaction', { state: 'treat', treatSize: snack.size, food, duration: 5000 });
   lastTreatMessage = message;
@@ -153,7 +155,7 @@ function flushTreat(reopen = false) {
     reopenAfterTreat = false;
     treatPlaying = false;
     if (!quitting && !avatar.isDestroyed()) avatar.webContents.send('avatar:reaction', { state: 'idle' });
-    if (restore && !quitting) showPopup();
+    if (!quitting && mayRestorePopup(restore, returnStartedAt)) showPopup();
   }, 5000);
   return true;
 }
@@ -226,6 +228,7 @@ function previewResize(cursor) {
 }
 
 function showPopup() {
+  popupReturnStartedAt = null;
   restClock?.touch();
   cancelTreat(); treatQueue.requested = false;
   if (!store.snapshot().settings.hatched && !hatching) { hatchBuddy(); return; }
@@ -295,6 +298,7 @@ function startRoll(celebration = false, followUp = null) {
 
 function reactToProgress(result, random = Math.random) {
   const reopen = popup.isVisible() || reopenAfterCelebration || reopenAfterTreat;
+  const returnStartedAt = popup.isVisible() ? Date.now() : popupReturnStartedAt;
   cancelTreat(false);
   treatQueue.record(result);
   cancelCelebration();
@@ -303,13 +307,14 @@ function reactToProgress(result, random = Math.random) {
   const streak = summary(result.state).current;
   const followUp = result.completed && result.allComplete && [3, 7, 14, 30, 60, 100].includes(streak) ? 'wink' : null;
   if (result.completed) {
+    popupReturnStartedAt = returnStartedAt;
     popup.hide();
     reopenAfterCelebration = reopen && !result.allComplete;
     const roll = random() >= .5 && startRoll(true, followUp);
     if (!roll) avatar.webContents.send('avatar:reaction', { state: 'celebrate', followUp });
     showEffects(roll ? 'roll' : 'celebrate', '');
     celebrationTimer = setTimeout(() => {
-      const restore = reopenAfterCelebration;
+      const restore = mayRestorePopup(reopenAfterCelebration);
       cancelCelebration(); hideEffects(); stopRoll();
       syncAvatarSize();
       const snack = !result.allComplete && !quitting && treatQueue.request(store.snapshot()) && flushTreat(restore);
@@ -327,6 +332,10 @@ function reactToProgress(result, random = Math.random) {
     lastEncouragement = chooseEncouragement(lastEncouragement);
     showEffects('halfway', lastEncouragement);
   }
+}
+
+function mayRestorePopup(requested, startedAt = popupReturnStartedAt) {
+  return shouldRestorePopup(requested, startedAt, smokeTest ? Number.MAX_SAFE_INTEGER : powerMonitor.getSystemIdleTime());
 }
 
 function hideEffects() {
@@ -417,6 +426,18 @@ function showThought(item, checkOnly = false) {
       }, sequence.thinkingMs);
     } else showEffects('mystery', formatSurprise(item));
   }
+  return true;
+}
+
+function flushGraceNotice() {
+  if (smokeTest || quitting || !store.snapshot().settings.hatched || !store.snapshot().habits.some(habit => !habit.archived)) return false;
+  const notice = graceNotice(store.snapshot());
+  if (!notice || powerMonitor.getSystemIdleTime() >= 600) return false;
+  if (!showThought({ type: 'grace', text: '' }, true)) return false;
+  // Save only when the bubble can actually be shown; sleeping laptops wait.
+  store.markGraceNotice(notice.day);
+  showEffects('greeting', notice.text, 11000);
+  broadcast();
   return true;
 }
 
@@ -674,7 +695,10 @@ if (!app.requestSingleInstanceLock()) {
     restClock?.stop(); clearTimeout(treatTimer); clearInterval(computerActivityTimer); clearInterval(welcomeRetryTimer); clearTimeout(welcomeTimer); clearInterval(gazeTimer); clearInterval(presentationTimer); clearTimeout(hatchTimer); cancelCelebration(); hideEffects(); stopRoll(); if (stopReminders) stopReminders(); if (stopThoughts) stopThoughts();
   });
   app.on('window-all-closed', () => {});
-  app.on('activate', openBuddy);
+  app.on('activate', () => {
+    if (avatar && !avatar.isDestroyed()) avatar.showInactive();
+    if (welcomeReady) flushWelcome();
+  });
   app.whenReady().then(async () => {
     app.setAppUserModelId(APP_ID);
     if (process.platform === 'darwin') app.dock.hide();
@@ -713,7 +737,7 @@ if (!app.requestSingleInstanceLock()) {
     powerMonitor.on('resume', () => welcomeBack('resume'));
     powerMonitor.on('unlock-screen', () => welcomeBack('unlock'));
     presentationTimer = setInterval(() => {
-      try { restClock.check(); welcomeManager.recordActive(powerMonitor.getSystemIdleTime() < 60); if (store.refreshRewards()) broadcast(); else syncAvatarSize(); }
+      try { restClock.check(); welcomeManager.recordActive(powerMonitor.getSystemIdleTime() < 60); if (store.refreshRewards()) broadcast(); else syncAvatarSize(); flushGraceNotice(); }
       catch (error) { console.error('Could not save buddy rewards:', error.message); }
     }, 30000);
     popup.on('blur', () => {
@@ -759,6 +783,32 @@ if (!app.requestSingleInstanceLock()) {
         const captureDir = smokeCaptureDirectory();
         require('node:fs').mkdirSync(captureDir, { recursive: true });
         await runShopSmoke({ avatar, popup, store, closeReward, hideEffects, broadcast, showPopup }, captureDir);
+        app.emit('activate');
+        if (popup.isVisible()) throw new Error('App activation must not open the habit popup');
+        const previous = store.snapshot();
+        const receiptHabit = store.addHabit({ name: 'Coin receipt check', type: 'checkbox' });
+        const receiptDay = require('./renderer/domain').localDay(new Date(), previous.settings.dayStartHour);
+        const receiptEntry = store.logProgress(receiptHabit.id, 1).state.days[receiptDay].find(entry => entry.id === receiptHabit.id);
+        const receiptFixture = store.snapshot(), shiftDay = require('./renderer/domain').shiftDay;
+        receiptFixture.habits = [receiptHabit];
+        receiptFixture.days = Object.fromEntries([-2, -1, 0].map(offset => [shiftDay(receiptDay, offset), [{ ...receiptEntry }]]));
+        receiptFixture.collection = { ...previous.collection, coins: 2, rewardedDays: [-2, -1].map(offset => shiftDay(receiptDay, offset)), milestones: [], earnings: [] };
+        store.commit(receiptFixture); broadcast(); openMystery();
+        await new Promise(resolve => setTimeout(resolve, 120));
+        const receiptText = await popup.webContents.executeJavaScript("document.querySelector('#reward-coin-text').textContent");
+        if (!receiptText.includes('1 coin for completing all your habits.') || !receiptText.includes('1 coin as a bonus for your 3-day streak.') || !receiptText.includes('You earned 2 coins today.') || !receiptText.includes('Your balance: 4 coins.')) throw new Error('The reward view must explain the full coin increase');
+        require('node:fs').writeFileSync(path.join(captureDir, 'coin-receipt-preview.png'), (await popup.webContents.capturePage()).toPNG());
+        const olderReceipt = store.snapshot();
+        Object.assign(olderReceipt.collection, { economyVersion: 2, coins: 9, months: [receiptDay.slice(0, 7)], legacyMilestones: [...olderReceipt.collection.milestones] });
+        olderReceipt.collection.earnings = olderReceipt.collection.earnings.map(reward => reward.kind === 'streak' ? { ...reward, coins: 5 } : reward);
+        olderReceipt.collection.earnings.push({ id: `monthly:${receiptDay.slice(0, 7)}`, kind: 'monthly', day: receiptDay, coins: 1 });
+        store.commit(olderReceipt); broadcast();
+        popup.webContents.send('mystery:reveal', olderReceipt.mystery.days[receiptDay].claims.at(-1));
+        await new Promise(resolve => setTimeout(resolve, 120));
+        const migratedText = await popup.webContents.executeJavaScript("document.querySelector('#reward-coin-text').textContent");
+        if (!migratedText.includes('You earned 2 coins today.') || !migratedText.includes('1 coin as a bonus for your 3-day streak.') || !migratedText.includes('Your balance: 9 coins.') || migratedText.includes('5 coins') || /monthly/i.test(migratedText)) throw new Error('Migrated rewards must show only the current tier rules');
+        closeReward(false); store.commit(previous); broadcast();
+        console.log('COIN AND POPUP CHECK PASSED: full daily/streak receipt and no activation-driven menu.');
         await runUpdateSmoke({ popup, showPopup, original: updates, replace: next => { updates = next; }, publish: broadcastUpdates, captureDir });
         if (!buddyMenu().items.some(item => item.label === 'Quit Deskling')) throw new Error('The buddy context menu must include Quit Deskling');
         showPopup();
@@ -841,7 +891,8 @@ if (!app.requestSingleInstanceLock()) {
         if (!showThought(napThought)) throw new Error('Daytime thoughts must be allowed while napping');
         await waitForBubble();
         if (restClock.lastActivity !== idleDeadline || await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'smile') throw new Error('Thoughts must briefly wake without counting as user activity');
-        await new Promise(resolve => setTimeout(resolve, thoughtDuration(formatSurprise(napThought)) + 100));
+        const napSequence = jokeSequence(napThought);
+        await new Promise(resolve => setTimeout(resolve, (napSequence ? napSequence.thinkingMs + napSequence.answerMs : thoughtDuration(formatSurprise(napThought))) + 100));
         if (await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'sleepy') throw new Error('Buddy must settle back down after a thought');
         affectionAt = 0;
         await avatar.webContents.executeJavaScript("lastPet = 0; document.querySelector('#buddy').dispatchEvent(new PointerEvent('pointerenter'))");

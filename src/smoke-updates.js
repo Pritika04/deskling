@@ -8,7 +8,7 @@ async function runUpdateSmoke({ popup, showPopup, original, replace, publish, ca
   const fake = new EventEmitter();
   let response = 'missing', finishDownload, saved = false, installed = false;
   fake.checkForUpdates = async () => {
-    if (response === 'missing') throw new Error('404');
+    if (response === 'missing') throw Object.assign(new Error('No published versions on GitHub'), { code: 'ERR_XML_MISSED_ELEMENT' });
     if (response === 'offline') throw new Error('ECONNRESET');
     fake.emit('update-available', { version: '999.0.0' }); return {};
   };

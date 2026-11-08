@@ -15,11 +15,12 @@ test('streak carries yesterday while today is unfinished and records best across
     '2026-11-01': [entry()], '2026-11-02': [entry()], '2026-11-04': [entry()], '2026-11-05': [entry()],
   } };
   let data = summary(state, new Date(2026, 10, 6, 12));
-  assert.equal(data.current, 2); assert.equal(data.best, 2);
+  assert.equal(data.current, 4); assert.equal(data.best, 4);
   state.days['2026-11-06'] = [entry()];
   data = summary(state, new Date(2026, 10, 6, 12));
-  assert.equal(data.current, 3); assert.equal(data.best, 3);
-  assert.equal(summary(state, new Date(2026, 10, 8, 12)).current, 0);
+  assert.equal(data.current, 5); assert.equal(data.best, 5);
+  assert.equal(summary(state, new Date(2026, 10, 8, 12)).frozen, true);
+  assert.equal(summary(state, new Date(2026, 10, 9, 12)).current, 0);
 });
 test('month calendar includes every date, aligns weeks, and respects rollover', () => {
   const state = { settings: { dayStartHour: 4 }, habits: [], days: {} };
