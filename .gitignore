@@ -147,3 +147,8 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Generated app icons (source is build/icon.svg)
+build/icon.png
+build/icon.ico
+build/icon.icns

@@ -33,8 +33,8 @@ function idleState() {
     return;
   }
   const gift = HabitDomain.mysteryStatus(buddyState).available;
-  button.setAttribute('aria-label', gift ? 'Open your mystery box. Drag to move.' : 'Open or close Habit Buddy. Drag to move.');
-  button.title = gift ? 'A little surprise is waiting. Click to open.' : `${buddyState.settings.buddyName} · Click for your day · double-click for affection`;
+  button.setAttribute('aria-label', gift ? 'Open your mystery box. Drag to move.' : 'Open or close Deskling. Drag to move.');
+  button.title = gift ? 'A little surprise is waiting. Click to open. Right-click for options.' : `${buddyState.settings.buddyName} · Click for your day · double-click for affection · right-click for options`;
   if (gift) { clearIdleFidget(); document.body.dataset.state = 'gift'; applyGaze(); return; }
   document.body.dataset.state = resting ? 'sleepy' : 'idle';
   if (resting) clearIdleFidget();

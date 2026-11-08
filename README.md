@@ -1,14 +1,16 @@
-# Habit Buddy
+# Deskling
 
-A tiny, gentle desktop habit tracker for Windows and macOS. A floating buddy keeps you company, offers gentle reminder bubbles, and celebrates your small steps. Finish your habits for a mystery surprise and earn coins for little hats, glasses, scarves, and umbrellas. Name your buddy, choose a palette, and mix and match its outfit. Everything stays on your device and works offline after setup.
+A tiny desktop companion that keeps you company and helps you build gentle habits. Name your buddy, choose its colors, and enjoy reminders, little jokes, snack celebrations, and daily surprises. Earn coins for cute accessories as you make progress. Your habits and buddy data stay on your device and work offline; Windows update checks use an internet connection.
 
 ## Run
 
 Requires Node.js 22.12 or newer and npm.
 
 ```sh
+git clone https://github.com/Pritika04/deskling.git
+cd deskling
 npm install
 npm start
 ```
 
-Click the buddy to open your habits. Drag it to move it, or drag its top or bottom grip vertically to resize. Use the grip beside a habit to reorder it. Open the gear for settings, or the bag for the shop and wardrobe. Your habits stay the same each day, with fresh daily progress. Quit through the tray/menu bar icon.
+To build an installer on your own operating system, run `npm run dist:win` (Windows), `npm run dist:mac` (macOS), or `npm run dist:linux` (Linux). Open the resulting installer or app in `dist/`. These are beta builds; signing and platform testing details are in [RELEASING.md](RELEASING.md).

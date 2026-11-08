@@ -15,6 +15,42 @@ let collectionSlot = 'hat';
 let selectedAccessory = null;
 let draftOutfit = null;
 const clockSync = [];
+let updateInfo = null;
+function renderUpdates(info) {
+  updateInfo = info;
+  $('#app-version').textContent = `Deskling ${info.currentVersion}`;
+  const descriptions = {
+    unsupported: 'In-app updates are available in the installed Windows app.',
+    idle: 'A little check keeps Deskling up to date.',
+    checking: 'Checking for updates…',
+    'up-to-date': 'You have the latest Deskling.',
+    available: `Deskling ${info.version} is available.`,
+    downloading: `Downloading your update… ${info.percent}%`,
+    downloaded: 'Your update is ready. Restart whenever you’re ready.',
+    installing: 'Restarting Deskling with your update…',
+    error: 'Could not check for updates. Please try again later.',
+    unavailable: 'No published updates yet. You can keep using Deskling.',
+  };
+  $('#update-status').textContent = info.message || descriptions[info.stage];
+  const action = $('#update-action');
+  action.hidden = !info.supported;
+  action.disabled = ['checking', 'downloading', 'installing'].includes(info.stage);
+  action.textContent = info.stage === 'downloaded' ? 'Update and restart' : info.stage === 'available' ? 'Download update' : info.stage === 'downloading' ? 'Downloading…' : 'Check for updates';
+  $('#update-later').hidden = !['available', 'downloaded'].includes(info.stage);
+  $('#settings-toggle').classList.toggle('update-available', info.attention);
+  $('#settings-toggle').setAttribute('aria-label', info.attention ? 'Settings, update available' : 'Settings');
+}
+window.buddy.onUpdates(renderUpdates);
+window.buddy.getUpdates().then(renderUpdates).catch(console.error);
+$('#update-action').addEventListener('click', async () => {
+  if (!updateInfo) return;
+  try {
+    if (updateInfo.stage === 'downloaded') await window.buddy.installUpdate();
+    else if (updateInfo.stage === 'available') await window.buddy.downloadUpdate();
+    else await window.buddy.checkUpdates();
+  } catch { $('#update-status').textContent = 'Could not finish the update. Please try again later.'; }
+});
+$('#update-later').addEventListener('click', () => window.buddy.deferUpdate().then(renderUpdates).catch(console.error));
 function syncClocks() { clockSync.forEach(sync => sync()); }
 function showView(view) {
   if (state && !state.settings.hatched) view = 'welcome';
@@ -415,6 +451,7 @@ $('#rename-form').addEventListener('submit', async event => {
 });
 $('#back-home').addEventListener('click', () => { editing = null; showView('home'); });
 $('#settings-done').addEventListener('click', () => showView('home'));
+$('#quit-app').addEventListener('click', () => window.buddy.quitApp());
 $('#mystery-invite').addEventListener('click', () => perform(() => window.buddy.openMystery()));
 for (const [selector, key, getValue] of [
   ['#avatar-choice', 'avatar', element => element.value], ['#palette', 'palette', element => element.value],

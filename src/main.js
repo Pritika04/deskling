@@ -3,12 +3,15 @@
 const path = require('node:path');
 const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen, dialog, powerMonitor } = require('electron');
 const { Store } = require('./store');
+const { configureAppIdentity, APP_ID, DATA_FILE } = require('./app-identity');
+const { UpdateManager } = require('./updates');
 const { summary, mysteryStatus } = require('./renderer/domain');
 const makeTrayIcon = require('./tray-icon');
 const { startReminders } = require('./reminders');
 const { formatSurprise } = require('./mystery');
 const { startThoughts, thoughtDuration, jokeSequence } = require('./thoughts');
 const { runShopSmoke } = require('./smoke-shop');
+const { runUpdateSmoke } = require('./smoke-updates');
 const { RestClock, restAfterFor } = require('./rest');
 const { nearbyGaze } = require('./gaze');
 const { WelcomeManager } = require('./welcome');
@@ -18,6 +21,7 @@ const { chooseGreeting, giftSize, chooseEncouragement, encouragements } = requir
 
 let avatar, popup, effects, tray, store, drag, resize;
 let quitting = false;
+let updates;
 let rolling = null;
 let stopReminders;
 let stopThoughts;
@@ -59,7 +63,10 @@ const POPUP_WIDTH = 380;
 const POPUP_HEIGHT = 620;
 const shopSmoke = process.argv.includes('--shop-test');
 const smokeTest = process.argv.includes('--smoke-test') || shopSmoke;
-if (smokeTest) app.setPath('userData', path.join(app.getPath('temp'), `habit-buddy-smoke-${require('node:crypto').randomUUID()}`));
+configureAppIdentity(app, { isolated: smokeTest });
+// Floating window placement and global cursor tracking need X11/XWayland.
+if (process.platform === 'linux') app.commandLine.appendSwitch('ozone-platform', 'x11');
+const smokeCaptureDirectory = () => app.isPackaged ? path.join(app.getPath('userData'), 'captures') : path.join(__dirname, '..', '.npm');
 
 function updateNearbyGaze() {
   if (!gazeTrackingEnabled || !avatar || avatar.isDestroyed() || !avatar.isVisible()) return;
@@ -420,9 +427,13 @@ function broadcast() {
   }
 }
 
-function trayMenu() {
-  tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Open Habit Buddy', click: showPopup },
+function broadcastUpdates(info) {
+  if (popup && !popup.isDestroyed()) popup.webContents.send('updates:changed', info);
+}
+
+function buddyMenu() {
+  return Menu.buildFromTemplate([
+    { label: 'Open Deskling', click: showPopup },
     { label: 'Pause reminders', type: 'checkbox', checked: store.snapshot().settings.remindersPaused, click: item => {
       restClock.touch();
       try {
@@ -434,15 +445,18 @@ function trayMenu() {
       trayMenu();
     } },
     { type: 'separator' },
-    { label: 'Quit Habit Buddy', click: () => app.quit() },
-  ]));
+    { label: 'Quit Deskling', click: () => app.quit() },
+  ]);
 }
+
+function trayMenu() { tray.setContextMenu(buddyMenu()); }
 
 function createWindow(options, page) {
   const window = new BrowserWindow({
+    icon: path.join(__dirname, '..', 'build', 'icon.png'),
     frame: false, resizable: false, maximizable: false, fullscreenable: false,
     skipTaskbar: true, alwaysOnTop: true, show: false,
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: !smokeTest },
     ...options,
   });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
@@ -464,6 +478,13 @@ function createWindow(options, page) {
 
 function registerIpc() {
   const trusted = event => [avatar, popup].some(window => window && event.sender === window.webContents && event.senderFrame === window.webContents.mainFrame);
+  for (const [channel, action] of Object.entries({ 'updates:get': () => updates.snapshot(), 'updates:check': () => updates.check(), 'updates:download': () => updates.download(), 'updates:later': () => updates.later(), 'updates:install': () => updates.install() })) {
+    ipcMain.handle(channel, event => {
+      if (!trusted(event) || event.sender !== popup.webContents) throw new Error('Unknown window.');
+      return action();
+    });
+  }
+  ipcMain.on('app:quit', event => { if (trusted(event)) app.quit(); });
   ipcMain.on('buddy:activity', (event, kind) => {
     if (!trusted(event)) return;
     const cursor = screen.getCursorScreenPoint();
@@ -648,16 +669,22 @@ if (!app.requestSingleInstanceLock()) {
   app.on('second-instance', openBuddy);
   app.on('before-quit', () => {
     quitting = true;
+    updates?.dispose();
     try { welcomeManager?.recordActive(true, true); } catch (error) { console.error('Could not save last visit:', error.message); }
     restClock?.stop(); clearTimeout(treatTimer); clearInterval(computerActivityTimer); clearInterval(welcomeRetryTimer); clearTimeout(welcomeTimer); clearInterval(gazeTimer); clearInterval(presentationTimer); clearTimeout(hatchTimer); cancelCelebration(); hideEffects(); stopRoll(); if (stopReminders) stopReminders(); if (stopThoughts) stopThoughts();
   });
   app.on('window-all-closed', () => {});
   app.on('activate', openBuddy);
   app.whenReady().then(async () => {
-    app.setAppUserModelId('com.habitbuddy.desktop');
+    app.setAppUserModelId(APP_ID);
     if (process.platform === 'darwin') app.dock.hide();
-    store = new Store(path.join(app.getPath('userData'), 'habit-buddy.json'));
+    store = new Store(path.join(app.getPath('userData'), DATA_FILE));
     store.refreshRewards();
+    const updateClient = app.isPackaged && process.platform === 'win32' && !smokeTest ? require('electron-updater').autoUpdater : null;
+    updates = new UpdateManager({ updater: updateClient, version: app.getVersion(),
+      onChange: broadcastUpdates,
+      beforeInstall: () => { const [x, y] = avatar.getPosition(); store.updateSettings({ avatarPosition: { x, y } }); },
+    });
     lastActivityPointer = screen.getCursorScreenPoint();
     restClock = new RestClock({ idleMs: () => restAfterFor(), onChange: rest => {
       if (!quitting && avatar && !avatar.isDestroyed()) avatar.webContents.send('buddy:rest', rest);
@@ -669,8 +696,8 @@ if (!app.requestSingleInstanceLock()) {
     const saved = store.snapshot().settings.avatarPosition;
     const size = store.snapshot().settings.avatarSize;
     const position = clampPosition(saved || { x: area.x + 20, y: area.y + area.height - size - 16 }, size, size);
-    avatar = createWindow({ ...position, width: size, height: size, transparent: true, thickFrame: false, hasShadow: false, title: 'Habit Buddy' }, 'avatar.html');
-    popup = createWindow({ width: POPUP_WIDTH, height: popupHeight, transparent: true, thickFrame: false, hasShadow: false, backgroundColor: '#00000000', title: 'Your day · Habit Buddy' }, 'popup.html');
+    avatar = createWindow({ ...position, width: size, height: size, transparent: true, thickFrame: false, hasShadow: false, title: 'Deskling' }, 'avatar.html');
+    popup = createWindow({ width: POPUP_WIDTH, height: popupHeight, transparent: true, thickFrame: false, hasShadow: false, backgroundColor: '#00000000', title: 'Your day · Deskling' }, 'popup.html');
     effects = createWindow({ width: 320, height: 220, transparent: true, thickFrame: false, hasShadow: false, focusable: false, title: 'A little celebration' }, 'effects.html');
     effects.setIgnoreMouseEvents(true);
     registerIpc();
@@ -690,20 +717,27 @@ if (!app.requestSingleInstanceLock()) {
       catch (error) { console.error('Could not save buddy rewards:', error.message); }
     }, 30000);
     popup.on('blur', () => {
-      if (popup.isFocused()) return;
+      // Isolated automation must not depend on other apps retaining OS focus.
+      if (smokeTest || popup.isFocused()) return;
       // Leave avatar clicks to the toggle handler, avoiding hide-then-reopen.
       const cursor = screen.getCursorScreenPoint();
       const bounds = avatar.getBounds();
       if (cursor.x < bounds.x || cursor.x >= bounds.x + bounds.width || cursor.y < bounds.y || cursor.y >= bounds.y + bounds.height) { cancelHatching(); closeReward(); popup.hide(); }
     });
-    const icon = makeTrayIcon(nativeImage);
+    const appIcon = process.platform === 'win32' ? nativeImage.createFromPath(path.join(__dirname, '..', 'build', 'icon.png')) : null;
+    const icon = appIcon && !appIcon.isEmpty() ? appIcon.resize({ width: 32, height: 32 }) : makeTrayIcon(nativeImage);
     if (process.platform === 'darwin') icon.setTemplateImage(true);
     tray = new Tray(icon);
-    tray.setToolTip('Habit Buddy · a little company for your day');
+    tray.setToolTip('Deskling · a little company for your day');
     tray.on('click', showPopup);
     trayMenu();
+    avatar.webContents.on('context-menu', event => {
+      event.preventDefault();
+      buddyMenu().popup({ window: avatar });
+    });
     if (!smokeTest) stopReminders = startReminders(store, showReminder);
     if (!smokeTest) stopThoughts = startThoughts(store, showThought, { isComputerActive: () => powerMonitor.getSystemIdleTime() < 10 * 60 });
+    if (!smokeTest) updates.start();
     for (const event of ['display-removed', 'display-metrics-changed']) screen.on(event, () => {
       stopRoll();
       const [x, y] = avatar.getPosition();
@@ -719,12 +753,20 @@ if (!app.requestSingleInstanceLock()) {
         if (result.version !== 1 || result.habits.length !== 0) throw new Error('Smoke test state mismatch.');
         if (await window.webContents.executeJavaScript('document.body.dataset.ready') !== 'true') throw new Error('Renderer did not initialize.');
       }
+      if (app.getName() !== 'Deskling' || avatar.getTitle() !== 'Deskling' || await popup.webContents.executeJavaScript("document.querySelector('.wordmark').textContent") !== 'DESKLING') throw new Error('The app and desktop UI must use Deskling branding');
       if (shopSmoke) {
         store.nameBuddy('Miso'); broadcast();
-        const captureDir = path.join(__dirname, '..', '.npm');
+        const captureDir = smokeCaptureDirectory();
         require('node:fs').mkdirSync(captureDir, { recursive: true });
         await runShopSmoke({ avatar, popup, store, closeReward, hideEffects, broadcast, showPopup }, captureDir);
-        app.quit(); return;
+        await runUpdateSmoke({ popup, showPopup, original: updates, replace: next => { updates = next; }, publish: broadcastUpdates, captureDir });
+        if (!buddyMenu().items.some(item => item.label === 'Quit Deskling')) throw new Error('The buddy context menu must include Quit Deskling');
+        showPopup();
+        await popup.webContents.executeJavaScript("document.querySelector('#settings-toggle').click()");
+        if (!await popup.webContents.executeJavaScript("!!document.querySelector('#quit-app') && !document.querySelector('#settings').hidden")) throw new Error('Settings must provide a visible Quit Deskling button');
+        console.log('QUIT UI CHECK PASSED: buddy menu and Settings exit action.');
+        await popup.webContents.executeJavaScript("document.querySelector('#quit-app').click()");
+        return;
       }
       const shellDeadline = Date.now() + 5000;
       while (!avatar.isVisible() && Date.now() < shellDeadline) await new Promise(resolve => setTimeout(resolve, 25));
@@ -738,7 +780,7 @@ if (!app.requestSingleInstanceLock()) {
         }
       };
       const onboardingFs = require('node:fs');
-      const onboardingCaptures = path.join(__dirname, '..', '.npm');
+      const onboardingCaptures = smokeCaptureDirectory();
       onboardingFs.mkdirSync(onboardingCaptures, { recursive: true });
       if (await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'egg') throw new Error('First launch must start with an egg');
       onboardingFs.writeFileSync(path.join(onboardingCaptures, 'egg-preview.png'), (await avatar.webContents.capturePage()).toPNG());
@@ -1037,7 +1079,7 @@ if (!app.requestSingleInstanceLock()) {
       if (await avatar.webContents.executeJavaScript('document.body.dataset.state') !== 'celebrate' || rolling) throw new Error('Confetti celebration failed');
       if (popup.isVisible()) throw new Error('Menu must hide during completion confetti');
       const fs = require('node:fs');
-      const captureDir = path.join(__dirname, '..', '.npm');
+      const captureDir = smokeCaptureDirectory();
       fs.mkdirSync(captureDir, { recursive: true });
       fs.writeFileSync(path.join(captureDir, 'buddy-preview.png'), (await avatar.webContents.capturePage()).toPNG());
       await effects.webContents.executeJavaScript('new Promise(resolve => setTimeout(resolve, 120))');
@@ -1258,7 +1300,7 @@ if (!app.requestSingleInstanceLock()) {
     }
   }).catch(error => {
     console.error(error);
-    if (!smokeTest) dialog.showErrorBox('Habit Buddy needs a moment', error.message);
+    if (!smokeTest) dialog.showErrorBox('Deskling needs a moment', error.message);
     app.exit(1);
   });
 }

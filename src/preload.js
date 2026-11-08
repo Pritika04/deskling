@@ -16,6 +16,16 @@ for (const type of ['pointerdown', 'pointermove', 'pointerover', 'keydown', 'inp
 }
 
 contextBridge.exposeInMainWorld('buddy', {
+  getUpdates: () => ipcRenderer.invoke('updates:get'),
+  checkUpdates: () => ipcRenderer.invoke('updates:check'),
+  downloadUpdate: () => ipcRenderer.invoke('updates:download'),
+  installUpdate: () => ipcRenderer.invoke('updates:install'),
+  deferUpdate: () => ipcRenderer.invoke('updates:later'),
+  onUpdates: callback => {
+    const listener = (_event, info) => callback(info);
+    ipcRenderer.on('updates:changed', listener);
+    return () => ipcRenderer.removeListener('updates:changed', listener);
+  },
   getState: () => ipcRenderer.invoke('state:get'),
   activity: () => ipcRenderer.send('buddy:activity'),
   getRest: () => ipcRenderer.invoke('buddy:rest'),
@@ -57,6 +67,7 @@ contextBridge.exposeInMainWorld('buddy', {
   },
   togglePopup: () => ipcRenderer.send('popup:toggle'),
   closePopup: () => ipcRenderer.send('popup:close'),
+  quitApp: () => ipcRenderer.send('app:quit'),
   fitPopup: height => ipcRenderer.send('popup:fit', height),
   fitBubble: size => ipcRenderer.send('effects:fit', size),
   onBubblePosition: callback => {

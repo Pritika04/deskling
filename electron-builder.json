@@ -1,0 +1,41 @@
+{
+  "appId": "com.habitbuddy.desktop",
+  "productName": "Deskling",
+  "artifactName": "Deskling-${version}-${os}-${arch}.${ext}",
+  "directories": { "output": "dist", "buildResources": "build" },
+  "files": ["src/**/*", "content/**/*", "build/icon.png", "package.json", "README.md"],
+  "asar": true,
+  "npmRebuild": false,
+  "win": {
+    "target": [{ "target": "nsis", "arch": ["x64"] }],
+    "icon": "build/icon.ico",
+    "signExecutable": false,
+    "publish": [{ "provider": "github", "owner": "Pritika04", "repo": "deskling", "channel": "latest", "releaseType": "release" }]
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowElevation": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Deskling",
+    "runAfterFinish": true,
+    "deleteAppDataOnUninstall": false
+  },
+  "mac": {
+    "target": ["dmg", "zip"],
+    "category": "public.app-category.productivity",
+    "icon": "build/icon.icns",
+    "identity": "-",
+    "notarize": false,
+    "hardenedRuntime": false
+  },
+  "linux": {
+    "target": ["AppImage", "tar.gz"],
+    "category": "Utility",
+    "icon": "build/icon.png",
+    "executableName": "deskling",
+    "synopsis": "A little desktop company for your everyday habits"
+  }
+}

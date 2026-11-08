@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self'; object-src 'none'; base-uri 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Your day · Habit Buddy</title>
+  <title>Your day · Deskling</title>
   <link rel="stylesheet" href="popup.css">
   <script defer src="domain.js"></script><script defer src="theme.js"></script><script defer src="wardrobe.js"></script><script defer src="popup.js"></script>
 </head>
 <body>
-  <header><span class="wordmark">HABIT BUDDY</span><div class="header-actions">
+  <header><span class="wordmark">DESKLING</span><div class="header-actions">
     <button id="back-home" class="icon" aria-label="Back to your habits" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6M8 12h12"/></svg></button>
     <button id="shop-toggle" class="icon" aria-label="Shop and wardrobe"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l1 13H4L5 8Zm3 0V6a4 4 0 0 1 8 0v2"/><path d="M9 13q3 4 6 0"/></svg></button>
     <button id="settings-toggle" class="icon" aria-label="Settings" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 3-.6 2.1-2 .9-2-.6-2.4 4.2 1.5 1.5v2l-1.5 1.5L5 18.8l2-.6 2 .9.6 2.1h5l.6-2.1 2-.9 2 .6 2.4-4.2-1.5-1.5v-2l1.5-1.5L19 5.4l-2 .6-2-.9-.6-2.1Z"/><circle cx="12" cy="12" r="3.2"/></svg></button>
@@ -53,7 +53,13 @@
       <label>Your buddy<select id="avatar-choice"><option value="plant">Little sprout</option><option value="pineapple">Pineapple</option><option value="star">Star</option></select></label>
       <label>Palette<select id="palette"><option value="sage">Sage</option><option value="lavender">Lavender</option><option value="peach">Peach</option><option value="ocean">Ocean</option></select></label>
       <div class="color-row"><label>Custom accent <input id="accent" type="color" value="#789568"></label><button id="reset-accent" class="text-button">Use palette</button></div>
+      <div id="app-update" class="app-update">
+        <span id="app-version" class="muted small"></span>
+        <p id="update-status" class="small" role="status" aria-live="polite"></p>
+        <div class="update-actions"><button id="update-action" class="text-button" type="button" hidden>Check for updates</button><button id="update-later" class="text-button" type="button" hidden>Later</button></div>
+      </div>
       <button id="settings-done" class="primary view-done" type="button">Back to my habits</button>
+      <button id="quit-app" class="text-button quit-app" type="button">Quit Deskling</button>
     </section>
     <section id="today" data-home>
       <div id="empty"><div class="empty-mark" aria-hidden="true">✦</div><h2>One small thing at a time.</h2><p class="muted">Choose something that feels good for you.</p><button id="first-habit" class="primary">Add your first habit</button></div>

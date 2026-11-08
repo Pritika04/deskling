@@ -52,6 +52,14 @@ section { margin-bottom: 20px; }
 #settings h1 { margin-bottom: 5px; }
 #form-title { font: 24px/1.3 Georgia, serif; font-weight: 400; margin: 0 0 12px; }
 .view-done { width: 100%; margin-top: 24px; }
+.quit-app { display: block; margin: 10px auto 0; color: var(--muted); }
+.app-update { margin-top: 18px; }
+.app-update p { margin: 4px 0; color: var(--muted); }
+.update-actions { display: flex; gap: 8px; }
+.update-actions .text-button { padding: 4px 0; }
+.update-actions #update-later { padding-left: 8px; color: var(--muted); }
+#settings-toggle { position: relative; }
+#settings-toggle.update-available::after { content: ''; position: absolute; right: 2px; top: 2px; width: 6px; height: 6px; border-radius: 50%; background: #c5a264; box-shadow: 0 0 0 2px var(--paper); }
 #editor { scroll-margin-top: 62px; }
 label { display: block; margin-top: 12px; font-size: 11px; }
 input, select { width: 100%; padding: 8px; border: 1px solid #dce0d5; border-radius: 8px; background: var(--paper); color: var(--ink); font: inherit; margin-top: 4px; }

@@ -1,4 +1,6 @@
-# Habit Buddy: Project Spec
+# Deskling: Project Spec
+
+The public app and repository name is Deskling. Keep the original `habit-buddy` data directory, `habit-buddy.json` save file, and `com.habitbuddy.desktop` OS identifier so existing users retain their buddy and progress across the rename. Smoke tests always use isolated temporary profiles.
 
 A tiny, minimalist desktop habit tracker. It lives as a small animated avatar in the corner of the screen. The user never has to "open an app" to stay on track. It reminds them gently, reacts to progress, and rewards them at the end of the day.
 
@@ -6,9 +8,8 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 
 ## Platforms
 
-- **Windows and macOS** (both required for v1)
-- Developed on Windows. The Mac build is produced by GitHub Actions, so the developer doesn't need a Mac.
-- Linux is out of scope.
+- **Windows and macOS** are the primary v1 targets; Linux x64 builds are experimental and require X11/XWayland.
+- Developed and tested locally on Windows. macOS Apple Silicon/Intel and Linux builds run on native GitHub Actions runners and still need real-machine installation checks before claiming support.
 
 ## Tech stack
 
@@ -117,11 +118,15 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 
 ### 11. Install and launch
 - Manual app launch for now; launch at login is deferred.
-- One-line install per OS, pulling the right build from GitHub Releases:
-  - macOS: a `curl ... | sh` script (or Homebrew cask later)
-  - Windows: a PowerShell one-liner (or winget later)
-- Builds produced by **GitHub Actions** on tagged releases (Windows + macOS artifacts).
-- Code signing is out of scope for now. Terminal-based install avoids most Gatekeeper and SmartScreen friction.
+- The Windows installer has Run Deskling checked by default on its final page, opening the buddy when the user clicks Finish.
+- Quit directly through the buddy's right-click menu or the Quit Deskling button in Settings, as well as the tray menu. Use recognizable Deskling artwork for the Windows tray icon; exiting must not depend on the tray being visible.
+- Build a per-user Windows x64 NSIS installer, macOS DMG/ZIP for Apple Silicon and Intel, and Linux x64 AppImage/tarball. `npm run dist:win`, `dist:mac`, and `dist:linux` build on their native OS and produce SHA-256 manifests in `dist/`.
+- Generate platform icons from the original SVG with `npm run icons`. Keep personal data, screenshots, tests, and development dependencies out of the packaged app.
+- GitHub Actions builds and checks all four variants on manual dispatch or matching version tags, and uploads downloadable artifacts. Publishing a GitHub Release is a separate manual step; one-line remote installers and public download links wait for tested published release assets.
+- Beta builds are unsigned on Windows and ad-hoc signed on macOS without notarization. Signing and notarization remain public-launch work; terminal scripts do not bypass platform trust requirements.
+- Linux currently requires X11/XWayland for window placement and cursor tracking. Validate tray support and Chromium sandbox prerequisites on target distributions. Native Wayland support is deferred.
+- Packaged smoke checks use disposable profiles and writable temporary capture directories. Preserve the original data folder through installs and upgrades; the Windows uninstaller retains saved data. See `RELEASING.md` for build and verification steps.
+- Installed Windows builds quietly check published stable GitHub Releases after thirty seconds and every twelve hours, with manual checking in Settings. A small gear badge announces an available update. Users explicitly choose Download update and Update and restart, or Later. Downloads are verified, position is saved before installation, and ordinary quit never installs an update. Offline and unpublished-release states stay within Settings. Development runs and other platforms do not contact the update feed.
 
 ## Architecture notes
 
@@ -140,7 +145,7 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 6. Reminders (buddy speech bubbles)
 7. Mystery box and content pool
 8. Coin shop and mix-and-match wardrobe
-9. Install scripts and GitHub Actions release builds (manual app launch)
+9. Platform installers, checksums, and GitHub Actions build artifacts (manual app launch and release publication)
 
 ## Out of scope for v1 (future ideas)
 
@@ -149,7 +154,7 @@ Originally conceived for a friend who isn't feeling his best and needs gentle he
 - **Smart reminders** that only nudge when behind pace
 - **Rough-day mode** and grace days for streaks
 - **Friend mode**, where a trusted person sees a summary and can send notes into the mystery box
-- Auto-update, code signing, Linux support
+- macOS/Linux auto-update, code signing/notarization, native Wayland support, and additional Linux architectures
 - New buddy species as larger collectible rewards
 
 ## Tone guide
