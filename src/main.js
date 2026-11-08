@@ -65,6 +65,9 @@ const POPUP_HEIGHT = 620;
 const shopSmoke = process.argv.includes('--shop-test');
 const smokeTest = process.argv.includes('--smoke-test') || shopSmoke;
 configureAppIdentity(app, { isolated: smokeTest });
+// Intel macOS hosted runners cannot initialize EGL for screenshot capture.
+// Keep the full UI check, using the software compositor only on that CI host.
+if (smokeTest && process.env.GITHUB_ACTIONS === 'true' && process.platform === 'darwin' && process.arch === 'x64') app.disableHardwareAcceleration();
 // Floating window placement and global cursor tracking need X11/XWayland.
 if (process.platform === 'linux') app.commandLine.appendSwitch('ozone-platform', 'x11');
 const smokeCaptureDirectory = () => app.isPackaged ? path.join(app.getPath('userData'), 'captures') : path.join(__dirname, '..', '.npm');

@@ -15,6 +15,8 @@ Use Node.js 22.12 or newer, then run `npm ci`.
 
 `npm run pack` creates an unpacked app for the current platform. `npm run smoke:packaged` launches the built app with a disposable profile and checks startup, content, shop, outfits, and persistence. On headless Linux, use `xvfb-run -a npm run smoke:packaged`. Pass an installed executable directly with `npm run smoke:packaged -- "path/to/Deskling.exe"` to check an installation.
 
+Intel macOS GitHub Actions smoke runs use Electron's software compositor because the hosted runner cannot initialize EGL for screenshot capture. The same UI and capture assertions still run. Local app launches and other platforms keep their normal graphics settings; this CI check does not replace testing on a physical Intel Mac.
+
 The app icon comes from `build/icon.svg`. `npm run icons` generates PNG, ICO, and ICNS files. Build output and generated icons are excluded from Git. Build scripts include only app code, bundled content, the runtime icon, package metadata, and README; personal saves, test screenshots, and development tools are excluded.
 
 On a Windows account without an existing Deskling installation, `npm run smoke:installer` silently installs into a temporary workspace folder, checks the installed app with an isolated profile, reinstalls it, then uninstalls and removes that temporary installation. This exercises Windows installer registration and shortcuts, so use a clean test account for repeated release checks. It does not launch or alter your real buddy profile.
