@@ -1,5 +1,7 @@
 # Deskling
 
+**[🌱 Visit the Deskling website →](https://deskling-bjwf.vercel.app/)**
+
 A tiny desktop companion that keeps you company and helps you build gentle habits. Name your buddy, choose its colors, and enjoy reminders, little jokes, snack celebrations, and daily surprises. Earn coins for cute accessories as you make progress. Your habits and buddy data stay on your device and work offline; Windows update checks use an internet connection.
 
 ## Run
