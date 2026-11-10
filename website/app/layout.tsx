@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(origin), title: "Deskling — A little desktop pet for your everyday habits",
   description: "Meet Deskling, a free desktop pet and habit tracker for Windows. Build gentle habits with a little buddy, reminders, small celebrations and lovely collectible accessories. No account needed.",
   alternates: { canonical: "/" },
+  verification: { google: "9ARKQpf2SMMIXV2HkUarOaBszsJ02jxLOePaQA0qPMk" },
   openGraph: { title: "Good habits. Better company. Meet Deskling.", description: "A little desktop buddy for your everyday habits. Free for Windows. No account needed.", type: "website", siteName: "Deskling", url: origin, images: [{ url: "/social.png", width: 1200, height: 630, alt: "Deskling desktop buddies: a sprout, pineapple and star" }] },
   twitter: { card: "summary_large_image", title: "Good habits. Better company.", description: "Meet Deskling, a little desktop buddy for your everyday habits.", images: ["/social.png"] }, icons: { icon: "/favicon.svg" },
 };
