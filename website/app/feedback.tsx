@@ -81,7 +81,7 @@ export default function Feedback() {
   return <section className="feedback-section wrap" id="feedback" aria-labelledby="feedback-heading">
     <div className="feedback-card">
       <div className="feedback-mark" aria-hidden="true"><MessageCircle size={32} strokeWidth={1.2} /><Heart size={13} /></div>
-      <div className="feedback-copy"><span className="eyebrow">A LITTLE NOTE CAN MAKE A BIG DIFFERENCE</span><h2 id="feedback-heading">Help Deskling grow.</h2><p>Found something confusing? Have a tiny wish?<br />A little feedback goes a long way.</p></div>
+      <div className="feedback-copy"><h2 id="feedback-heading">Help Deskling grow.</h2><p>Found something confusing? Have a tiny wish?<br />We’d love to hear it.</p></div>
       <div className="feedback-action"><button className="button" type="button" onClick={open}>Leave feedback <ArrowRight size={16} /></button><span>No account. Email optional.</span></div>
     </div>
     <dialog ref={dialog} className="feedback-dialog" aria-labelledby="feedback-title" aria-describedby="feedback-intro" onClick={event => { if (event.target === event.currentTarget) dialog.current?.close(); }}>
@@ -93,21 +93,20 @@ export default function Feedback() {
           <p id="feedback-intro">Your note has been sent privately.<br />Every little thought helps.</p>
           <button type="button" className="button" onClick={() => dialog.current?.close()}>Back to Deskling <ArrowRight size={15} /></button>
         </div> : <>
-          <span className="eyebrow">A LITTLE SPACE FOR YOUR THOUGHTS</span>
           <h3 id="feedback-title">What’s on your mind?</h3>
           <p id="feedback-intro">A bug, an idea, or a little note. All welcome.</p>
           <form onSubmit={submit}>
-            <fieldset disabled={sending} className="feedback-categories"><legend>What kind of note?</legend><div>{(Object.entries(categories) as [Category, string][]).map(([value, label]) => <button key={value} type="button" aria-pressed={category === value} onClick={() => setCategory(value)}>{label}</button>)}</div></fieldset>
+            <fieldset disabled={sending} className="feedback-categories"><legend className="sr-only">What kind of note?</legend><div>{(Object.entries(categories) as [Category, string][]).map(([value, label]) => <button key={value} type="button" aria-pressed={category === value} onClick={() => setCategory(value)}>{label}</button>)}</div></fieldset>
             <label className="feedback-field" htmlFor="feedback-message">Your message <span>(required)</span></label>
             <textarea ref={messageInput} id="feedback-message" name="message" value={message} onChange={event => setMessage(event.target.value)} required maxLength={4000} rows={5} disabled={sending} placeholder="I’d love it if…" />
             <label className="feedback-field" htmlFor="feedback-email">Email <span>(optional)</span></label>
             <input id="feedback-email" name="email" type="email" autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} maxLength={254} disabled={sending} aria-describedby="feedback-email-help" placeholder="Only if you’d like a reply" />
-            <p id="feedback-email-help" className="feedback-field-help">Leave it blank to send without your name or contact details.</p>
+            <p id="feedback-email-help" className="feedback-field-help">Only if you’d like a reply. Otherwise, leave it blank.</p>
             <div className="feedback-honeypot" aria-hidden="true"><label htmlFor="feedback-extra">Leave this field empty</label><input id="feedback-extra" name="_gotcha" autoComplete="off" tabIndex={-1} /></div>
             {!configured && <p className="feedback-status" role="status">Our feedback inbox is taking a little break. Please try again soon.</p>}
             {error && <p className="feedback-error" role="alert">{error}</p>}
             <button className="button feedback-submit" type="submit" disabled={sending || !configured}>{sending ? "Sending your note…" : "Send a little note"}<ArrowRight size={15} /></button>
-            <p className="feedback-privacy">Sent privately via Formspree. Your email is never required.</p>
+            <p className="feedback-privacy">A private note, sent via Formspree.</p>
           </form>
         </>}
       </div>
