@@ -152,3 +152,6 @@ vite.config.ts.timestamp-*
 build/icon.png
 build/icon.ico
 build/icon.icns
+
+# Local Sites prototype; the Vercel website lives in website/.
+/sites/
