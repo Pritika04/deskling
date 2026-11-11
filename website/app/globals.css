@@ -7,6 +7,36 @@
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}.demo-confetti{display:none}}
 
 /* Private feedback, with an optional reply address. */
+.upcoming-page { padding-top: 30px; }
+.upcoming-back { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.upcoming-intro { text-align: center; padding: 65px 0 85px; max-width: 690px; margin-inline: auto; }
+.upcoming-intro h1 { font-size: clamp(48px, 6vw, 78px); line-height: 1.1; letter-spacing: -2.5px; margin: 22px 0 28px; }
+.upcoming-intro h1 em { color: #8a986d; font-weight: 400; }
+.upcoming-intro > p { font-size: 16px; line-height: 1.9; color: var(--muted); max-width: 490px; margin-inline: auto; }
+.upcoming-note { display: block; font-size: 12px; color: var(--muted); line-height: 1.8; margin-top: 25px; }
+.upcoming-group { padding-bottom: 70px; }
+.upcoming-group-heading { margin-bottom: 28px; }
+.upcoming-status { display: inline-block; font-size: 11px; color: #5e744e; background: #e3e9d8; border-radius: 20px; padding: 5px 12px; margin-bottom: 17px; }
+.upcoming-status.exploring { background: #ede8dc; color: #81755d; }
+.upcoming-group-heading h2 { font-size: 37px; letter-spacing: -1px; margin-bottom: 13px; }
+.upcoming-group-heading p { font-size: 14px; color: var(--muted); }
+.upcoming-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.upcoming-grid.exploring-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.upcoming-card { border: 1px solid var(--line); background: #eef0e5; border-radius: 23px; padding: 30px; }
+.exploring-grid .upcoming-card { background: #f2efe6; }
+.upcoming-card > svg { color: var(--sage); margin-bottom: 24px; }
+.upcoming-card h3 { font-size: 26px; margin-bottom: 14px; letter-spacing: -.5px; }
+.upcoming-card p { font-size: 14px; line-height: 1.9; color: #6c7b64; }
+.upcoming-invitation { text-align: center; padding: 10px 0 85px; }
+.upcoming-invitation > svg { color: #98a57e; margin: 0 auto 20px; }
+.upcoming-invitation h2 { font-size: 39px; margin-bottom: 19px; }
+.upcoming-invitation p { font-size: 14px; line-height: 1.9; color: var(--muted); }
+.upcoming-invitation .button { margin-top: 27px; }
+.upcoming-invitation > span { display: block; font-size: 11px; color: var(--muted); margin-top: 15px; }
+.site-header nav a[aria-current=page] { color: var(--ink); text-decoration: underline; text-underline-offset: 6px; }
+@media (max-width: 800px) { .upcoming-grid.exploring-grid { grid-template-columns: 1fr; } .upcoming-intro { padding-block: 50px 65px; } }
+@media (max-width: 520px) { .upcoming-page { padding-top: 18px; } .upcoming-intro { padding-block: 45px 55px; } .upcoming-intro h1 { letter-spacing: -1.7px; margin-block: 20px 24px; } .upcoming-intro > p { font-size: 14px; } .upcoming-note { font-size: 11px; } .upcoming-grid { grid-template-columns: 1fr; gap: 16px; } .upcoming-card { padding: 25px; } .upcoming-card h3 { font-size: 25px; } .upcoming-group { padding-bottom: 50px; } .upcoming-group-heading h2 { font-size: 32px; } .upcoming-group-heading p { font-size: 13px; line-height: 1.8; } .upcoming-invitation h2 { font-size: 34px; } .upcoming-invitation p { font-size: 13px; } .upcoming-invitation p br { display: none; } .upcoming-invitation { padding-bottom: 55px; } }
+
 .downloads-section { padding-block: 35px 100px; }
 .downloads-section .section-intro { text-align: center; }
 .downloads-section .section-intro h2 { margin: 15px 0 20px; }
