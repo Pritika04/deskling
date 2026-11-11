@@ -4,6 +4,8 @@
 
 A tiny desktop companion that keeps you company and helps you build gentle habits. Name your buddy, choose its colors, and enjoy reminders, little jokes, snack celebrations, and daily surprises. Earn coins for cute accessories as you make progress. Your habits and buddy data stay on your device and work offline; Windows update checks use an internet connection.
 
+[Download for Windows, macOS, or Linux](https://deskling-bjwf.vercel.app/#downloads). Mac and Linux builds are early betas; the download page includes installation notes.
+
 ## Run
 
 Requires Node.js 22.12 or newer and npm.

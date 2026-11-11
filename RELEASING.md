@@ -44,6 +44,12 @@ To exit, right-click the buddy and choose **Quit Deskling**, or open Settings an
 
 The workflow only uploads build artifacts; it never publishes a release. Remote download/install scripts and landing-page download links should point to published, tested release assets once those exist. Launch at login remains deferred.
 
+### Published 0.1.6 platform beta files
+
+The macOS arm64, macOS x64, and Linux x64 files come from successful workflow run `42520627857` at `9f1ca6a731d0d1b9478a0efc22837afa87e9fd90`. Relative to the release tag, the only runtime source change enables software rendering during Intel macOS CI smoke checks; normal launches are unchanged. Each platform passed the packaged startup, UI, shop, persistence, and quit checks. These are early betas, pending physical-device installation, upgrade, and multi-monitor checks. Windows release files and updater metadata remain unchanged.
+
+Linux AppImages use `x86_64` in their filename while tarballs use `x64`. The per-platform checksum generator includes both. Reverify every artifact's SHA-256 after download before attaching it to a release. The website's `website/lib/downloads.ts` lists the actual asset filenames; update it only after those assets are published.
+
 ## Windows in-app updates
 
 Installed Windows builds check the public `Pritika04/deskling` GitHub Releases feed thirty seconds after startup and every twelve hours. Settings also offers a manual check. The gear gets a small badge for a newer stable version; the user chooses Download update, Update and restart, or Later. Downloads show progress, verify their checksums, and do not install on ordinary quit. Latest changes and position are saved before an explicit restart. Core habit tracking remains usable offline, and there are no update popups.

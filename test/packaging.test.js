@@ -53,6 +53,16 @@ test('missing installation files cannot produce a misleading successful manifest
   assert.throws(() => writeChecksums(directory(t)), /No Deskling installation files/);
 });
 
+test('Linux checksums include both the x86_64 AppImage and x64 tarball', t => {
+  const output = directory(t);
+  const names = [`Deskling-${version}-linux-x86_64.AppImage`, `Deskling-${version}-linux-x64.tar.gz`];
+  for (const name of names) fs.writeFileSync(path.join(output, name), name);
+  fs.writeFileSync(path.join(output, `Deskling-${version}-linux-arm64.AppImage`), 'other architecture');
+  const manifest = writeChecksums(output, { platform: 'linux', arch: 'x64' });
+  const expected = names.sort().map(name => `${createHash('sha256').update(name).digest('hex')}  ${name}`).join('\n') + '\n';
+  assert.equal(fs.readFileSync(manifest, 'utf8'), expected);
+});
+
 test('packaging retains the existing OS identity and user data without shipping local screenshots', () => {
   assert.equal(config.appId, APP_ID);
   assert.equal(config.nsis.deleteAppDataOnUninstall, false);

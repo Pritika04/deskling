@@ -23,7 +23,7 @@ For Vercel, import `Pritika04/deskling` and use these project settings:
 
 Vercel must build `website/`, which contains the Next.js package. After saving the settings, deploy the latest `main` commit.
 
-The site uses Vercel's production hostname automatically. To use a custom canonical domain, set `NEXT_PUBLIC_SITE_URL` to its full HTTPS URL and redeploy. Downloads come from the published Windows installer on GitHub Releases.
+The site uses Vercel's production hostname automatically. To use a custom canonical domain, set `NEXT_PUBLIC_SITE_URL` to its full HTTPS URL and redeploy. The download cards use published GitHub Release assets for Windows x64, Apple Silicon and Intel macOS, and Linux x64. URLs and version are centralized in `lib/downloads.ts`. Mac/Linux downloads are labeled early beta; installation notes explain notarization, X11/XWayland, and manual updates.
 
 ## Feedback inbox
 
