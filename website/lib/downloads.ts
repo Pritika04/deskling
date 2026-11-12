@@ -1,4 +1,4 @@
-export const releaseVersion = "0.1.6";
+export const releaseVersion = "0.1.7";
 const base = `https://github.com/Pritika04/deskling/releases/download/v${releaseVersion}`;
 export const downloads = {
   windows: `${base}/Deskling-${releaseVersion}-win-x64.exe`,
