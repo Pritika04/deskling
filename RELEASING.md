@@ -42,7 +42,7 @@ To exit, right-click the buddy and choose **Quit Deskling**, or open Settings an
 5. Test clean installation, reopening, and an upgrade that retains a named buddy, habits, history, coins, and outfits. Include a multi-monitor check on each supported OS.
 6. When ready to share, create a draft GitHub Release and attach the installation files and checksum manifests. For Windows updates, also attach `latest.yml` and the `.exe.blockmap` with their original filenames. Review its notes and downloads before publishing. Stable in-app updates use published releases, not drafts or prereleases.
 
-The workflow only uploads build artifacts; it never publishes a release. Remote download/install scripts and landing-page download links should point to published, tested release assets once those exist. Launch at login remains deferred.
+By default, the workflow only uploads build artifacts. For a production release from `main`, update the package version and `.github/release-notes.md`, then run the workflow with **Publish the release after all native checks pass** enabled. Its publish job waits for every native build, verifies all seven installer checksums and thirteen expected assets, then uploads and publishes directly within GitHub. It refuses to overwrite an already public release. No temporary branches or local installer transfers are needed. Point website download links to the new version only after publication. Launch at login remains deferred.
 
 ### Published 0.1.6 platform beta files
 

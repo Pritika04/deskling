@@ -39,11 +39,13 @@ async function runUpdateSmoke({ popup, showPopup, original, replace, publish, ca
     response = 'available';
     await manager.check();
     await wait("document.querySelector('#update-action').textContent === 'Download update'");
+    if (!await read("!document.querySelector('#available-update').hidden && document.querySelector('#update-version').textContent === 'v999.0.0' && document.querySelector('#app-version').textContent.startsWith('v')")) throw new Error('Installed and available versions need separate labeled rows');
     if (!await read("document.querySelector('#settings-toggle').classList.contains('update-available')")) throw new Error('Update availability needs a quiet settings badge');
     await read("document.querySelector('#update-later').click()");
     await wait("!document.querySelector('#settings-toggle').classList.contains('update-available')");
     await read("document.querySelector('#update-action').click()");
-    await wait("document.querySelector('#update-status').textContent.includes('50%') && document.querySelector('#update-action').disabled");
+    await wait("document.querySelector('#update-status').textContent.includes('50%') && document.querySelector('#update-action').hidden");
+    if (!await read("document.querySelector('#update-later').hidden")) throw new Error('Downloading should show progress without duplicate actions');
     finishDownload();
     await wait("document.querySelector('#update-action').textContent === 'Update and restart' && !document.querySelector('#update-action').disabled");
     fs.writeFileSync(path.join(captureDir, 'update-preview.png'), (await popup.webContents.capturePage()).toPNG());

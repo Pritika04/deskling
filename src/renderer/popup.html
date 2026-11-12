@@ -58,7 +58,10 @@
       <label>Palette<select id="palette"><option value="sage">Sage</option><option value="lavender">Lavender</option><option value="peach">Peach</option><option value="ocean">Ocean</option></select></label>
       <div class="color-row"><label>Custom accent <input id="accent" type="color" value="#789568"></label><button id="reset-accent" class="text-button">Use palette</button></div>
       <div id="app-update" class="app-update">
-        <span id="app-version" class="muted small"></span>
+        <div class="update-versions">
+          <div class="update-version-row"><span>Installed</span><span id="app-version"></span></div>
+          <div id="available-update" class="update-version-row" hidden><span>Available</span><span id="update-version"></span></div>
+        </div>
         <p id="update-status" class="small" role="status" aria-live="polite"></p>
         <div class="update-actions"><button id="update-action" class="text-button" type="button" hidden>Download update</button><a id="update-website" class="text-button" href="https://deskling-bjwf.vercel.app/#downloads" hidden>Get the Mac update ↗</a><button id="update-later" class="text-button" type="button" hidden>Later</button></div>
       </div>

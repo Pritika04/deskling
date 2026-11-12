@@ -23,13 +23,15 @@ function describeEarning(reward) {
 }
 function renderUpdates(info) {
   updateInfo = info;
-  $('#app-version').textContent = `Deskling ${info.currentVersion}`;
+  $('#app-version').textContent = `v${info.currentVersion}`;
+  $('#available-update').hidden = !info.version || !['available', 'downloading', 'downloaded', 'installing'].includes(info.stage);
+  $('#update-version').textContent = info.version ? `v${info.version}` : '';
   const descriptions = {
     unsupported: 'In-app updates are available in the installed Windows app.',
     idle: 'Deskling checks for new versions automatically.',
     checking: 'Checking for updates…',
     'up-to-date': 'You have the latest Deskling.',
-    available: info.manual ? `Deskling ${info.version} is available. Your buddy stays with you: download the Mac update, quit Deskling, then drag it into Applications and choose Replace. Your habits, coins, and accessories stay.` : `New update available: Deskling ${info.version}.`,
+    available: info.manual ? 'Your buddy stays with you: download the Mac update, quit Deskling, then drag it into Applications and choose Replace. Your habits, coins, and accessories stay.' : 'A new update is ready to download.',
     downloading: `Downloading your update… ${info.percent}%`,
     downloaded: 'Your update is ready. Restart whenever you’re ready.',
     installing: 'Restarting Deskling with your update…',
@@ -38,7 +40,7 @@ function renderUpdates(info) {
   };
   $('#update-status').textContent = info.message || descriptions[info.stage];
   const action = $('#update-action');
-  action.hidden = !info.supported || info.manual || !['available', 'downloading', 'downloaded', 'installing'].includes(info.stage);
+  action.hidden = !info.supported || info.manual || !['available', 'downloaded'].includes(info.stage);
   $('#update-website').hidden = !(info.manual && info.stage === 'available');
   action.disabled = ['checking', 'downloading', 'installing'].includes(info.stage);
   action.textContent = info.stage === 'available' ? 'Download update' : info.stage === 'downloading' ? 'Downloading…' : 'Update and restart';

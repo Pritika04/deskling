@@ -20,8 +20,8 @@
 .upcoming-status.exploring { background: #ede8dc; color: #81755d; }
 .upcoming-group-heading h2 { font-size: 37px; letter-spacing: -1px; margin-bottom: 13px; }
 .upcoming-group-heading p { font-size: 14px; color: var(--muted); }
-.upcoming-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
-.upcoming-grid.exploring-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.upcoming-grid { display: grid; grid-template-columns: 1fr; gap: 22px; }
+.upcoming-grid.exploring-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .upcoming-card { border: 1px solid var(--line); background: #eef0e5; border-radius: 23px; padding: 30px; }
 .exploring-grid .upcoming-card { background: #f2efe6; }
 .upcoming-card > svg { color: var(--sage); margin-bottom: 24px; }

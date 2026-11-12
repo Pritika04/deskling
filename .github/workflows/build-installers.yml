@@ -2,6 +2,11 @@ name: Build Deskling installers
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publish the release after all native checks pass
+        type: boolean
+        default: false
   push:
     tags: ['v*']
 
@@ -84,3 +89,58 @@ jobs:
             dist/*.AppImage
             dist/*.tar.gz
             dist/SHA256SUMS-*.txt
+
+  publish:
+    name: Publish verified release
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_release
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Verify release files
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),path=require('path'),crypto=require('crypto');
+          const {version}=require('./package.json');
+          if(!/^\d+\.\d+\.\d+$/.test(version))throw Error('A stable release version is required');
+          const base=`Deskling-${version}-`;
+          const installers=new Set(['win-x64.exe','mac-arm64.dmg','mac-arm64.zip','mac-x64.dmg','mac-x64.zip','linux-x86_64.AppImage','linux-x64.tar.gz'].map(s=>base+s));
+          const manifests=new Set(['win-x64','mac-arm64','mac-x64','linux-x64'].map(s=>`SHA256SUMS-${s}.txt`));
+          const allowed=new Set([...installers,...manifests,`${base}win-x64.exe.blockmap`,'latest.yml']);
+          const files=[];function walk(dir){for(const name of fs.readdirSync(dir)){const p=path.join(dir,name);if(fs.statSync(p).isDirectory())walk(p);else files.push(p)}}walk('artifacts');
+          const checked=new Set();
+          for(const m of files.filter(p=>manifests.has(path.basename(p))))for(const line of fs.readFileSync(m,'utf8').trim().split(/\r?\n/)){
+            const [hash,name]=line.split(/  /);
+            if(!installers.has(name)||checked.has(name))throw Error('Unexpected or duplicate installer: '+name);
+            if(crypto.createHash('sha256').update(fs.readFileSync(path.join(path.dirname(m),name))).digest('hex')!==hash)throw Error('Checksum mismatch: '+name);
+            checked.add(name);
+          }
+          const assets=files.filter(p=>allowed.has(path.basename(p)));
+          if(checked.size!==7||assets.length!==13||new Set(assets.map(p=>path.basename(p))).size!==13)throw Error('Incomplete release assets');
+          fs.writeFileSync('release-assets.txt',assets.join('\n')+'\n');
+          console.log('Verified all seven installers and thirteen release assets');
+          NODE
+      - name: Upload and publish
+        env:
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          version=$(node -p 'require("./package.json").version')
+          tag="v$version"
+          if gh release view "$tag" --json isDraft --jq .isDraft > release-draft.txt; then
+            test "$(cat release-draft.txt)" = true
+          else
+            gh release create "$tag" --target "$RELEASE_COMMIT" --draft --title "Deskling $version" --notes-file .github/release-notes.md
+          fi
+          mapfile -t files < release-assets.txt
+          gh release upload "$tag" "${files[@]}" --clobber
+          gh release edit "$tag" --draft=false --latest

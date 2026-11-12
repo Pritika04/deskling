@@ -1,24 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Gamepad2, Gift, Heart, Laptop, Sparkles, WandSparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Gamepad2, Gift, Heart, Mic, Sparkles, WandSparkles } from "lucide-react";
 import art from "../../lib/buddy-art.json";
 
 export const metadata: Metadata = {
   title: "What’s next for Deskling — Upcoming features",
-  description: "A little peek at Deskling’s plans: smoother Mac and Linux experiences, more accessories, and ideas for games, playful power-ups and new buddies. Share what you’d love next.",
+  description: "A little peek at Deskling’s plans: more accessories, and ideas for games, playful power-ups, new buddies and voice commands. Share what you’d love next.",
   alternates: { canonical: "/upcoming" },
   openGraph: { title: "A little peek at what’s next for Deskling", description: "Plans, possibilities, and little ideas for your desktop buddy.", url: "/upcoming", type: "website", images: ["/social.png"] },
   twitter: { card: "summary_large_image", title: "What’s next for Deskling", description: "Plans, possibilities, and little ideas for your desktop buddy.", images: ["/social.png"] },
 };
 
 const planned = [
-  { title: "More places to feel at home", description: "Polish the Mac and Linux betas with feedback from real computers: smoother installation, better desktop behavior, and fewer little hiccups.", Icon: Laptop },
   { title: "A little more dress-up", description: "More cute accessories to save your coins for, with outfits that make your buddy feel a little more like yours.", Icon: Gift },
 ];
 const exploring = [
   { title: "Little games, together", description: "A small play break with your buddy. Something quick, sweet, and easy to step away from when it’s time to focus again.", Icon: Gamepad2 },
   { title: "A sprinkle of magic", description: "Playful power-ups you could unlock with coins: a little extra sparkle, a new animation, or a fun way to play together.", Icon: WandSparkles },
   { title: "New little faces", description: "More buddies to meet and unlock. We’re also exploring an optional daily surprise buddy, with your favorite always there to switch back to.", Icon: Sparkles },
+  { title: "A little chat with your buddy", description: "Voice-activated commands for little things like “Log a glass of water,” “Show my habits,” or “Pause reminders.” A way to check in with your buddy, hands-free.", Icon: Mic },
 ];
 
 function Brand() {
