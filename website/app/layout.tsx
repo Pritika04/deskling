@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
+import GoogleAnalytics from "./google-analytics";
 import { downloads, releaseVersion } from "../lib/downloads";
 import { siteUrl as origin } from "../lib/site-url";
 export const metadata: Metadata = {
@@ -13,4 +14,4 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: "Good habits. Better company.", description: "Meet Deskling, a little desktop buddy for your everyday habits.", images: ["/social.png"] }, icons: { icon: "/favicon.svg" },
 };
 const software = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "Deskling", description: "A desktop pet and habit tracker with gentle reminders, progress tracking and collectible accessories.", operatingSystem: ["Windows", "macOS", "Linux"], applicationCategory: "LifestyleApplication", softwareVersion: releaseVersion, url: origin, downloadUrl: Object.values(downloads), offers: { "@type": "Offer", price: "0", priceCurrency: "USD" }, featureList: "Desktop pet, habit tracking, reminders, local data storage, streak grace, collectible accessories" };
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) { return <html lang="en"><body><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(software) }} />{children}<Analytics /><SpeedInsights /></body></html>; }
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) { return <html lang="en"><body><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(software) }} />{children}<GoogleAnalytics /><Analytics /><SpeedInsights /></body></html>; }

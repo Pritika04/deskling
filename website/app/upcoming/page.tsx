@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Gamepad2, Gift, Heart, Mic, Sparkles, WandSparkles } from "lucide-react";
 import art from "../../lib/buddy-art.json";
+import { AnalyticsPreferences } from "../google-analytics";
 
 export const metadata: Metadata = {
   title: "What’s next for Deskling — Upcoming features",
@@ -36,6 +37,6 @@ export default function Upcoming() {
       <section className="upcoming-group" aria-labelledby="exploring-heading"><div className="upcoming-group-heading"><span className="upcoming-status exploring">Exploring</span><h2 id="exploring-heading">What if we…?</h2><p>Ideas we’re playing with. Tell us which ones make you smile.</p></div><div className="upcoming-grid exploring-grid">{exploring.map(({ title, description, Icon }) => <article className="upcoming-card" key={title}><Icon size={25} strokeWidth={1.3} aria-hidden="true" /><h3>{title}</h3><p>{description}</p></article>)}</div></section>
       <section className="upcoming-invitation" aria-labelledby="idea-heading"><Heart size={25} strokeWidth={1.3} aria-hidden="true" /><h2 id="idea-heading">Got a tiny wish?</h2><p>Something you’d love to see? A small thing that would make your day?<br />Your notes help shape what Deskling becomes.</p><Link className="button" href="/#feedback">Share an idea <ArrowRight size={16} aria-hidden="true" /></Link><span>No account. Email optional.</span></section>
     </main>
-    <footer className="wrap"><Brand /><span>Small steps. Lovely company.</span><nav aria-label="Footer navigation"><Link href="/">Home</Link><Link href="/upcoming" aria-current="page">Upcoming</Link><Link href="/#feedback">Feedback</Link></nav><small>© 2026 Deskling</small></footer>
+    <footer className="wrap"><Brand /><span>Small steps. Lovely company.</span><nav aria-label="Footer navigation"><Link href="/">Home</Link><Link href="/upcoming" aria-current="page">Upcoming</Link><Link href="/#feedback">Feedback</Link><AnalyticsPreferences /></nav><small>© 2026 Deskling</small></footer>
   </>;
 }

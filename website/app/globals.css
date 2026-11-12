@@ -7,6 +7,18 @@
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}.demo-confetti{display:none}}
 
 /* Private feedback, with an optional reply address. */
+.footer-analytics { border: 0; background: transparent; padding: 0; font: inherit; color: inherit; }
+footer nav { flex-wrap: wrap; }
+.analytics-choice { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 40; width: min(720px, calc(100% - 32px)); display: flex; gap: 25px; align-items: center; padding: 21px 24px; background: var(--paper); border: 1px solid #d7dfcb; border-radius: 21px; box-shadow: 0 10px 45px #34493625; }
+.analytics-label { font-size: 9px; letter-spacing: 1.4px; color: var(--muted); }
+.analytics-choice p { margin-top: 7px; font-size: 13px; line-height: 1.7; }
+.analytics-choice a { display: inline-block; font-size: 11px; color: var(--muted); margin-top: 7px; text-decoration: underline; text-underline-offset: 3px; }
+.analytics-choice-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.analytics-choice-actions button { border: 1px solid #bbc8a8; border-radius: 9px; background: #e5eadc; color: var(--ink); font-size: 12px; min-height: 44px; min-width: 82px; padding: 9px 13px; }
+.analytics-choice-actions button:hover { background: #d7e1ca; }
+@media (max-width: 640px) { .analytics-choice { flex-direction: column; align-items: stretch; gap: 14px; padding: 19px 20px; bottom: 12px; } .analytics-choice-actions button { flex: 1; } }
+@media (max-width: 520px) { footer nav { justify-content: center; row-gap: 12px; } }
+
 .hatch-preview { overflow: hidden; }
 .hatch-stage { position: absolute; inset: 0; }
 .hatch-shell, .hatch-character { position: absolute; width: 128px; height: 128px; top: 12px; left: calc(50% - 64px); transition: opacity .45s, transform .55s; }
