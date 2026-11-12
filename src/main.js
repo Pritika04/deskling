@@ -1,10 +1,11 @@
 'use strict';
 
 const path = require('node:path');
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen, dialog, powerMonitor } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen, dialog, powerMonitor, shell, net } = require('electron');
 const { Store } = require('./store');
 const { configureAppIdentity, APP_ID, DATA_FILE } = require('./app-identity');
-const { UpdateManager } = require('./updates');
+const { UpdateManager, ManualUpdateManager } = require('./updates');
+const { configureWorkspaces } = require('./workspaces');
 const { summary, mysteryStatus, graceNotice } = require('./renderer/domain');
 const makeTrayIcon = require('./tray-icon');
 const { startReminders } = require('./reminders');
@@ -483,6 +484,7 @@ function createWindow(options, page) {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: !smokeTest },
     ...options,
   });
+  configureWorkspaces(window);
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', event => event.preventDefault());
   window.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
@@ -708,7 +710,10 @@ if (!app.requestSingleInstanceLock()) {
     store = new Store(path.join(app.getPath('userData'), DATA_FILE));
     store.refreshRewards();
     const updateClient = app.isPackaged && process.platform === 'win32' && !smokeTest ? require('electron-updater').autoUpdater : null;
-    updates = new UpdateManager({ updater: updateClient, version: app.getVersion(),
+    updates = app.isPackaged && process.platform === 'darwin' && !smokeTest
+      ? new ManualUpdateManager({ version: app.getVersion(), onChange: broadcastUpdates,
+        fetchRelease: (url, options) => net.fetch(url, options), openDownloadPage: url => shell.openExternal(url) })
+      : new UpdateManager({ updater: updateClient, version: app.getVersion(),
       onChange: broadcastUpdates,
       beforeInstall: () => { const [x, y] = avatar.getPosition(); store.updateSettings({ avatarPosition: { x, y } }); },
     });
@@ -726,6 +731,7 @@ if (!app.requestSingleInstanceLock()) {
     avatar = createWindow({ ...position, width: size, height: size, transparent: true, thickFrame: false, hasShadow: false, title: 'Deskling' }, 'avatar.html');
     popup = createWindow({ width: POPUP_WIDTH, height: popupHeight, transparent: true, thickFrame: false, hasShadow: false, backgroundColor: '#00000000', title: 'Your day · Deskling' }, 'popup.html');
     effects = createWindow({ width: 320, height: 220, transparent: true, thickFrame: false, hasShadow: false, focusable: false, title: 'A little celebration' }, 'effects.html');
+    if (smokeTest && process.platform === 'darwin' && [avatar, popup, effects].some(window => !window.isVisibleOnAllWorkspaces())) throw new Error('Buddy windows must be visible on every Mac Space');
     effects.setIgnoreMouseEvents(true);
     registerIpc();
     gazeTimer = setInterval(updateNearbyGaze, 100);

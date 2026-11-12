@@ -81,7 +81,7 @@ class UpdateManager {
     this.set({ attention: false }); return this.snapshot();
   }
   start({ delay = 30000, interval = 12 * 60 * 60 * 1000 } = {}) {
-    if (!this.updater || this.disposed || this.initialTimer) return;
+    if (!this.state.supported || this.disposed || this.initialTimer) return;
     this.initialTimer = setTimeout(() => this.check(), delay);
     this.repeatTimer = setInterval(() => this.check(), interval);
   }
@@ -91,4 +91,50 @@ class UpdateManager {
     for (const [event, handler] of this.listeners) this.updater.removeListener(event, handler);
   }
 }
-module.exports = { UpdateManager };
+
+const DOWNLOAD_PAGE = 'https://deskling-bjwf.vercel.app/#downloads';
+const RELEASE_API = 'https://api.github.com/repos/Pritika04/deskling/releases/latest';
+
+// macOS only checks release metadata. Downloads and installation stay in the user's hands.
+class ManualUpdateManager extends UpdateManager {
+  constructor({ version, arch = process.arch, fetchRelease = globalThis.fetch, openDownloadPage, onChange }) {
+    super({ version, onChange });
+    this.arch = arch; this.fetchRelease = fetchRelease; this.openDownloadPage = openDownloadPage;
+    this.state = { ...this.state, supported: true, manual: true, stage: 'idle' };
+  }
+  async check() {
+    if (this.disposed || this.state.stage === 'checking') return this.snapshot();
+    this.set({ stage: 'checking', message: '' });
+    try {
+      const response = await this.fetchRelease(RELEASE_API, {
+        headers: { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
+        credentials: 'omit', signal: AbortSignal.timeout(15000),
+      });
+      if (response.status === 404) throw new Error('404');
+      if (!response.ok) throw new Error('Release check failed');
+      const release = await response.json();
+      const version = typeof release.tag_name === 'string' ? release.tag_name.replace(/^v/, '') : '';
+      if (!semver.valid(version) || semver.prerelease(version) || release.draft || release.prerelease) throw new Error('Invalid stable release');
+      if (!semver.gt(version, this.currentVersion)) {
+        this.set({ stage: 'up-to-date', version: null, attention: false, message: '' });
+      } else if (!Array.isArray(release.assets) || !release.assets.some(asset => asset.name === `Deskling-${version}-mac-${this.arch}.dmg` && asset.state === 'uploaded')) {
+        this.set({ stage: 'unavailable', version: null, attention: false, message: 'The next Mac download is not available yet. You can keep using Deskling.' });
+      } else {
+        this.set({ stage: 'available', version, attention: version !== this.dismissedVersion, message: '' });
+      }
+    } catch (error) { this.fail(error); }
+    return this.snapshot();
+  }
+  async download() {
+    if (this.disposed || this.state.stage !== 'available') return this.snapshot();
+    try {
+      await this.openDownloadPage(DOWNLOAD_PAGE);
+      this.dismissedVersion = this.state.version;
+      this.set({ attention: false, message: '' });
+    } catch {
+      this.set({ message: 'Could not open the website. Please visit deskling-bjwf.vercel.app to download the update.' });
+    }
+    return this.snapshot();
+  }
+}
+module.exports = { UpdateManager, ManualUpdateManager, DOWNLOAD_PAGE };

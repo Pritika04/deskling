@@ -54,7 +54,15 @@ Linux AppImages use `x86_64` in their filename while tarballs use `x64`. The per
 
 Installed Windows builds check the public `Pritika04/deskling` GitHub Releases feed thirty seconds after startup and every twelve hours. Settings also offers a manual check. The gear gets a small badge for a newer stable version; the user chooses Download update, Update and restart, or Later. Downloads show progress, verify their checksums, and do not install on ordinary quit. Latest changes and position are saved before an explicit restart. Core habit tracking remains usable offline, and there are no update popups.
 
-No release is required to use the beta app: before the first publication, Settings simply says no updates have been published. A version that was distributed before updater support needs one manual installer upgrade. macOS and Linux keep manual updates for now.
+No release is required to use the beta app: before the first publication, Settings simply says no updates have been published. A version that was distributed before updater support needs one manual installer upgrade. Linux keeps manual updates for now.
+
+## Mac update notices and Spaces (0.1.7)
+
+Packaged macOS builds check the latest stable GitHub Release thirty seconds after startup and every twelve hours, and offer a manual check in Settings. A newer release must include an uploaded DMG for the running Mac architecture before a settings dot appears. The update action opens only `https://deskling-bjwf.vercel.app/#downloads` in the default browser after a click. It never downloads, installs, or opens a browser automatically. Later hides the dot for that version during the current session. Offline or rate-limited checks remain nonfatal.
+
+Mac users on 0.1.6 must manually install 0.1.7 once to get these notices. Future updates remain manual: open the website, download the matching Mac build, quit Deskling, and replace the app in Applications while keeping its saved data. Developer ID signing and notarization remain deferred.
+
+All three Mac floating windows (buddy, menu, effects) join every Space, including fullscreen Spaces. The Dock icon is hidden before setting that policy to avoid transforming the process for each window. Native macOS CI checks confirm the all-workspaces flag; physical Mac testing still needs to cover three-finger desktop swipes, fullscreen apps, Stage Manager, and multiple displays. Windows and Linux workspace behavior is unchanged.
 
 This beta uses HTTPS GitHub release metadata and updater checksum validation. The Windows installers are still unsigned; Authenticode signing remains necessary public-launch work. Do not disable signature verification when adding a signing certificate; test the transition to signed builds and their publisher identity before distributing them.
 

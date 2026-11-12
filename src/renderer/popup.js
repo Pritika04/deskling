@@ -26,10 +26,10 @@ function renderUpdates(info) {
   $('#app-version').textContent = `Deskling ${info.currentVersion}`;
   const descriptions = {
     unsupported: 'In-app updates are available in the installed Windows app.',
-    idle: 'A little check keeps Deskling up to date.',
+    idle: info.manual ? 'We’ll check for new Mac versions. Updates are downloaded from our website.' : 'A little check keeps Deskling up to date.',
     checking: 'Checking for updates…',
     'up-to-date': 'You have the latest Deskling.',
-    available: `Deskling ${info.version} is available.`,
+    available: info.manual ? `Deskling ${info.version} is available. Download the Mac app from our website, then quit Deskling and replace the app in Applications. Your saved buddy and habits stay.` : `Deskling ${info.version} is available.`,
     downloading: `Downloading your update… ${info.percent}%`,
     downloaded: 'Your update is ready. Restart whenever you’re ready.',
     installing: 'Restarting Deskling with your update…',
@@ -38,7 +38,8 @@ function renderUpdates(info) {
   };
   $('#update-status').textContent = info.message || descriptions[info.stage];
   const action = $('#update-action');
-  action.hidden = !info.supported;
+  action.hidden = !info.supported || (info.manual && info.stage === 'available');
+  $('#update-website').hidden = !(info.manual && info.stage === 'available');
   action.disabled = ['checking', 'downloading', 'installing'].includes(info.stage);
   action.textContent = info.stage === 'downloaded' ? 'Update and restart' : info.stage === 'available' ? 'Download update' : info.stage === 'downloading' ? 'Downloading…' : 'Check for updates';
   $('#update-later').hidden = !['available', 'downloaded'].includes(info.stage);
@@ -56,6 +57,13 @@ $('#update-action').addEventListener('click', async () => {
   } catch { $('#update-status').textContent = 'Could not finish the update. Please try again later.'; }
 });
 $('#update-later').addEventListener('click', () => window.buddy.deferUpdate().then(renderUpdates).catch(console.error));
+$('#update-website').addEventListener('click', async event => {
+  event.preventDefault();
+  if (updateInfo?.manual && updateInfo.stage === 'available') {
+    try { renderUpdates(await window.buddy.downloadUpdate()); }
+    catch { $('#update-status').textContent = 'Could not open the website. Please try again.'; }
+  }
+});
 function syncClocks() { clockSync.forEach(sync => sync()); }
 function showView(view) {
   if (state && !state.settings.hatched) view = 'welcome';
