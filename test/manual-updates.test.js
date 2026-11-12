@@ -71,14 +71,14 @@ test('offline, rate limits and browser failures are nonfatal and retryable', asy
   manager.openDownloadPage = originalOpen; await manager.download(); assert.deepEqual(opened, [DOWNLOAD_PAGE]);
 });
 
-test('Mac automatic checks use the same quiet startup and twelve-hour schedule', async t => {
-  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
+test('Mac automatic checks use the same five-second startup and fifteen-minute schedule', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: 0 });
   const { manager, requests } = setup(t);
-  manager.start(); manager.start(); t.mock.timers.tick(30000); await Promise.resolve(); await Promise.resolve();
+  manager.start(); manager.start(); t.mock.timers.tick(5000); await Promise.resolve(); await Promise.resolve();
   assert.equal(requests.length, 1);
-  t.mock.timers.tick(12 * 60 * 60 * 1000); await Promise.resolve(); await Promise.resolve();
+  t.mock.timers.tick(15 * 60 * 1000); await Promise.resolve(); await Promise.resolve();
   assert.equal(requests.length, 2);
-  manager.dispose(); t.mock.timers.tick(12 * 60 * 60 * 1000); assert.equal(requests.length, 2);
+  manager.dispose(); t.mock.timers.tick(15 * 60 * 1000); assert.equal(requests.length, 2);
 });
 
 test('all Mac floating windows join Spaces including fullscreen; other platforms are unchanged', () => {

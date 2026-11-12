@@ -52,13 +52,13 @@ Linux AppImages use `x86_64` in their filename while tarballs use `x64`. The per
 
 ## Windows in-app updates
 
-Installed Windows builds check the public `Pritika04/deskling` GitHub Releases feed thirty seconds after startup and every twelve hours. Settings also offers a manual check. The gear gets a small badge for a newer stable version; the user chooses Download update, Update and restart, or Later. Downloads show progress, verify their checksums, and do not install on ordinary quit. Latest changes and position are saved before an explicit restart. Core habit tracking remains usable offline, and there are no update popups.
+Installed Windows builds check the public `Pritika04/deskling` GitHub Releases feed five seconds after startup and every fifteen minutes. Opening the buddy menu or waking/unlocking the computer also triggers a check, with a five-minute cooldown to avoid duplicate requests. No manual Check for updates button is shown. The gear gets a small badge for a newer stable version; the user chooses Download update, Update and restart, or Later. Downloads show progress, verify their checksums, and do not install on ordinary quit. Latest changes and position are saved before an explicit restart. Core habit tracking remains usable offline, and there are no update popups.
 
 No release is required to use the beta app: before the first publication, Settings simply says no updates have been published. A version that was distributed before updater support needs one manual installer upgrade. Linux keeps manual updates for now.
 
 ## Mac update notices and Spaces (0.1.7)
 
-Packaged macOS builds check the latest stable GitHub Release thirty seconds after startup and every twelve hours, and offer a manual check in Settings. A newer release must include an uploaded DMG for the running Mac architecture before a settings dot appears. The update action opens only `https://deskling-bjwf.vercel.app/#downloads` in the default browser after a click. It never downloads, installs, or opens a browser automatically. Later hides the dot for that version during the current session. Offline or rate-limited checks remain nonfatal.
+Packaged macOS builds check the latest stable GitHub Release five seconds after startup and every fifteen minutes, with additional throttled checks when the menu opens or the computer wakes. No manual check button is shown. A newer release must include an uploaded DMG for the running Mac architecture before a settings dot appears. The update action opens only `https://deskling-bjwf.vercel.app/#downloads` in the default browser after a click. It never downloads, installs, or opens a browser automatically. Later hides the dot for that version during the current session. Offline or rate-limited checks remain nonfatal.
 
 Mac users on 0.1.6 must manually install 0.1.7 once to get these notices. Future updates remain manual: open the website, download the matching Mac build, quit Deskling, and replace the app in Applications while keeping its saved data. Developer ID signing and notarization remain deferred.
 
@@ -67,3 +67,9 @@ All three Mac floating windows (buddy, menu, effects) join every Space, includin
 This beta uses HTTPS GitHub release metadata and updater checksum validation. The Windows installers are still unsigned; Authenticode signing remains necessary public-launch work. Do not disable signature verification when adding a signing certificate; test the transition to signed builds and their publisher identity before distributing them.
 
 Run `npm run test:updates:download` on Windows to exercise the real updater against a loopback-only server, including altered-download rejection without running an installer. `npm run test:updates:install` builds two separate fixture apps and performs an actual 0.0.1 → 0.0.2 update and restart, verifying the existing Store's buddy, habits, progress, coins, outfit, size, and position. It uses its own app identity, cache, and profile and removes its temporary installation. These fixtures do not replace the user's Deskling installation.
+
+## Reminder wording (0.1.8)
+
+`content/reminders.json` holds 60 gentle habit reminder templates. A shuffled bag uses every template once before repeating, avoiding an immediate repeat at the boundary. Habit names are inserted as text, and reminder schedules, pause behavior, completion checks and queues are unchanged.
+
+Mac update notices now label the link **Get the Mac update** and explain dragging the downloaded app into Applications and choosing Replace. App data stays in the existing separate save location.

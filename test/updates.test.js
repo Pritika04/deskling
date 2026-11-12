@@ -130,13 +130,26 @@ test('unsupported builds never contact an update server', async () => {
   manager.start(); manager.dispose();
 });
 
-test('automatic checks start after thirty seconds, repeat twelve-hourly, and stop on quit', t => {
-  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
+test('menu and wake checks are automatic but throttled; failures can retry after cooldown', async t => {
+  let clock = 0;
+  const { manager, updater } = setup(t, { now: () => clock });
+  await manager.checkWhenDue(); assert.equal(updater.checks, 1);
+  clock = 60000; await manager.checkWhenDue(); assert.equal(updater.checks, 1);
+  clock = 300000; await manager.checkWhenDue(); assert.equal(updater.checks, 2);
+  updater.checkForUpdates = async () => { updater.checks++; throw Error('offline'); };
+  clock = 600000; await manager.checkWhenDue(); assert.equal(manager.snapshot().stage, 'available');
+  clock += 100; await manager.checkWhenDue(); assert.equal(updater.checks, 3);
+  clock += 300000; await manager.checkWhenDue(); assert.equal(updater.checks, 4);
+  manager.dispose(); clock += 300000; await manager.checkWhenDue(); assert.equal(updater.checks, 4);
+});
+
+test('automatic checks start after five seconds, repeat every fifteen minutes, and stop on quit', t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: 0 });
   const { updater, manager } = setup(t);
   updater.checkForUpdates = async () => { updater.checks++; updater.emit('update-not-available'); return {}; };
   manager.start(); manager.start();
-  t.mock.timers.tick(29999); assert.equal(updater.checks, 0);
+  t.mock.timers.tick(4999); assert.equal(updater.checks, 0);
   t.mock.timers.tick(1); assert.equal(updater.checks, 1);
-  t.mock.timers.tick(12 * 60 * 60 * 1000 - 30000); assert.equal(updater.checks, 2);
-  manager.dispose(); t.mock.timers.tick(12 * 60 * 60 * 1000); assert.equal(updater.checks, 2);
+  t.mock.timers.tick(15 * 60 * 1000 - 5000); assert.equal(updater.checks, 2);
+  manager.dispose(); t.mock.timers.tick(15 * 60 * 1000); assert.equal(updater.checks, 2);
 });

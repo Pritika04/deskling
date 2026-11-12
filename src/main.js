@@ -8,7 +8,8 @@ const { UpdateManager, ManualUpdateManager } = require('./updates');
 const { configureWorkspaces } = require('./workspaces');
 const { summary, mysteryStatus, graceNotice } = require('./renderer/domain');
 const makeTrayIcon = require('./tray-icon');
-const { startReminders } = require('./reminders');
+const { startReminders, ReminderMessages } = require('./reminders');
+const reminderMessages = new ReminderMessages();
 const { formatSurprise } = require('./mystery');
 const { startThoughts, thoughtDuration, jokeSequence } = require('./thoughts');
 const { runShopSmoke } = require('./smoke-shop');
@@ -232,6 +233,7 @@ function previewResize(cursor) {
 }
 
 function showPopup() {
+  if (!smokeTest) updates?.checkWhenDue();
   popupReturnStartedAt = null;
   restClock?.touch();
   cancelTreat(); treatQueue.requested = false;
@@ -378,7 +380,7 @@ function showReminder(habit) {
   if (activeWelcome || welcomeManager?.pending || welcomeManager?.away) return false;
   if (!store.snapshot().settings.hatched) return false;
   if (quitting || rolling || drag || resize || reopenAfterCelebration || popup.isVisible() || effectState || effects.webContents.isLoading()) return false;
-  const wording = /water|hydrat/i.test(habit.name) ? 'A little water break? Whenever you feel ready. 💧' : `A little moment for ${habit.name}? Whenever you're ready. 🌱`;
+  const wording = reminderMessages.next(habit.name);
   avatar.webContents.send('avatar:reaction', { state: 'smile', duration: 3000 });
   showEffects('reminder', wording);
   return true;
@@ -743,8 +745,8 @@ if (!app.requestSingleInstanceLock()) {
     if (!smokeTest) welcomeRetryTimer = setInterval(flushWelcome, 1000);
     powerMonitor.on('suspend', () => welcomeAway('suspend'));
     powerMonitor.on('lock-screen', () => welcomeAway('lock'));
-    powerMonitor.on('resume', () => welcomeBack('resume'));
-    powerMonitor.on('unlock-screen', () => welcomeBack('unlock'));
+    powerMonitor.on('resume', () => { welcomeBack('resume'); if (!smokeTest) updates.checkWhenDue(); });
+    powerMonitor.on('unlock-screen', () => { welcomeBack('unlock'); if (!smokeTest) updates.checkWhenDue(); });
     presentationTimer = setInterval(() => {
       try { restClock.check(); welcomeManager.recordActive(powerMonitor.getSystemIdleTime() < 60); if (store.refreshRewards()) broadcast(); else syncAvatarSize(); flushGraceNotice(); }
       catch (error) { console.error('Could not save buddy rewards:', error.message); }

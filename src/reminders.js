@@ -1,5 +1,22 @@
 'use strict';
 const { localDay, todayEntries } = require('./renderer/domain');
+const reminderTemplates = require('../content/reminders.json');
+
+class ReminderMessages {
+  constructor(random = Math.random) { this.random = random; this.bag = []; this.last = null; }
+  next(habit) {
+    if (!this.bag.length) {
+      this.bag = reminderTemplates.map((_, index) => index);
+      for (let i = this.bag.length - 1; i > 0; i--) {
+        const j = Math.floor(this.random() * (i + 1));
+        [this.bag[i], this.bag[j]] = [this.bag[j], this.bag[i]];
+      }
+      if (this.bag.at(-1) === this.last) [this.bag[0], this.bag[this.bag.length - 1]] = [this.bag.at(-1), this.bag[0]];
+    }
+    this.last = this.bag.pop();
+    return reminderTemplates[this.last].replaceAll('{habit}', habit);
+  }
+}
 const minutes = time => { const [hour, minute] = time.split(':').map(Number); return hour * 60 + minute; };
 
 function dueReminders(state, now = new Date()) {
@@ -51,4 +68,4 @@ function startReminders(store, notify, onError = console.error) {
   const timer = setInterval(tick, 15000);
   return () => clearInterval(timer);
 }
-module.exports = { dueReminders, processReminders, startReminders };
+module.exports = { dueReminders, processReminders, startReminders, ReminderMessages };

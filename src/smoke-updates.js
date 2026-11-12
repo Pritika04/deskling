@@ -30,13 +30,14 @@ async function runUpdateSmoke({ popup, showPopup, original, replace, publish, ca
   try {
     replace(manager); publish(manager.snapshot()); showPopup();
     await read("document.querySelector('#settings-toggle').click()");
-    await read("document.querySelector('#update-action').click()");
+    if (!await read("document.querySelector('#update-action').hidden")) throw new Error("Manual check button must be hidden");
+    await manager.check();
     await wait("document.querySelector('#update-status').textContent.includes('No published updates')");
     response = 'offline';
-    await read("document.querySelector('#update-action').click()");
+    await manager.check();
     await wait("document.querySelector('#update-status').textContent.includes('connection')");
     response = 'available';
-    await read("document.querySelector('#update-action').click()");
+    await manager.check();
     await wait("document.querySelector('#update-action').textContent === 'Download update'");
     if (!await read("document.querySelector('#settings-toggle').classList.contains('update-available')")) throw new Error('Update availability needs a quiet settings badge');
     await read("document.querySelector('#update-later').click()");
@@ -55,9 +56,9 @@ async function runUpdateSmoke({ popup, showPopup, original, replace, publish, ca
       openDownloadPage: async url => { opened = url; },
     });
     replace(manual); publish(manual.snapshot());
-    await read("document.querySelector('#update-action').click()");
+    await manual.check();
     await wait("!document.querySelector('#update-website').hidden && document.querySelector('#update-action').hidden");
-    if (!await read("document.querySelector('#settings-toggle').classList.contains('update-available') && document.querySelector('#update-status').textContent.includes('Applications')")) throw new Error('Mac update needs badge and manual instructions');
+    if (!await read("document.querySelector('#settings-toggle').classList.contains('update-available') && document.querySelector('#update-status').textContent.includes('choose Replace') && document.querySelector('#update-status').textContent.includes('coins')")) throw new Error('Mac update needs badge and manual instructions');
     if (opened) throw new Error('Mac update check must not open a browser automatically');
     await read("document.querySelector('#update-website').click()");
     await wait("!document.querySelector('#settings-toggle').classList.contains('update-available')");

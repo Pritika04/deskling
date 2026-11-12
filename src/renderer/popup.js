@@ -26,22 +26,22 @@ function renderUpdates(info) {
   $('#app-version').textContent = `Deskling ${info.currentVersion}`;
   const descriptions = {
     unsupported: 'In-app updates are available in the installed Windows app.',
-    idle: info.manual ? 'We’ll check for new Mac versions. Updates are downloaded from our website.' : 'A little check keeps Deskling up to date.',
+    idle: 'Deskling checks for new versions automatically.',
     checking: 'Checking for updates…',
     'up-to-date': 'You have the latest Deskling.',
-    available: info.manual ? `Deskling ${info.version} is available. Download the Mac app from our website, then quit Deskling and replace the app in Applications. Your saved buddy and habits stay.` : `Deskling ${info.version} is available.`,
+    available: info.manual ? `Deskling ${info.version} is available. Your buddy stays with you: download the Mac update, quit Deskling, then drag it into Applications and choose Replace. Your habits, coins, and accessories stay.` : `New update available: Deskling ${info.version}.`,
     downloading: `Downloading your update… ${info.percent}%`,
     downloaded: 'Your update is ready. Restart whenever you’re ready.',
     installing: 'Restarting Deskling with your update…',
-    error: 'Could not check for updates. Please try again later.',
+    error: 'Could not check for updates. We’ll try again automatically.',
     unavailable: 'No published updates yet. You can keep using Deskling.',
   };
   $('#update-status').textContent = info.message || descriptions[info.stage];
   const action = $('#update-action');
-  action.hidden = !info.supported || (info.manual && info.stage === 'available');
+  action.hidden = !info.supported || info.manual || !['available', 'downloading', 'downloaded', 'installing'].includes(info.stage);
   $('#update-website').hidden = !(info.manual && info.stage === 'available');
   action.disabled = ['checking', 'downloading', 'installing'].includes(info.stage);
-  action.textContent = info.stage === 'downloaded' ? 'Update and restart' : info.stage === 'available' ? 'Download update' : info.stage === 'downloading' ? 'Downloading…' : 'Check for updates';
+  action.textContent = info.stage === 'available' ? 'Download update' : info.stage === 'downloading' ? 'Downloading…' : 'Update and restart';
   $('#update-later').hidden = !['available', 'downloaded'].includes(info.stage);
   $('#settings-toggle').classList.toggle('update-available', info.attention);
   $('#settings-toggle').setAttribute('aria-label', info.attention ? 'Settings, update available' : 'Settings');
@@ -53,7 +53,6 @@ $('#update-action').addEventListener('click', async () => {
   try {
     if (updateInfo.stage === 'downloaded') await window.buddy.installUpdate();
     else if (updateInfo.stage === 'available') await window.buddy.downloadUpdate();
-    else await window.buddy.checkUpdates();
   } catch { $('#update-status').textContent = 'Could not finish the update. Please try again later.'; }
 });
 $('#update-later').addEventListener('click', () => window.buddy.deferUpdate().then(renderUpdates).catch(console.error));

@@ -2,9 +2,10 @@
 const semver = require('semver');
 
 class UpdateManager {
-  constructor({ updater = null, version, onChange = () => {}, beforeInstall = () => {} }) {
+  constructor({ updater = null, version, onChange = () => {}, beforeInstall = () => {}, now = Date.now }) {
     this.updater = updater; this.onChange = onChange; this.beforeInstall = beforeInstall;
     this.currentVersion = version; this.dismissedVersion = null; this.ready = false; this.disposed = false;
+    this.now = now; this.lastCheckAt = -Infinity;
     this.state = { supported: !!updater, stage: updater ? 'idle' : 'unsupported', currentVersion: version, version: null, percent: 0, attention: false, message: '' };
     this.listeners = [];
     if (!updater) return;
@@ -51,6 +52,7 @@ class UpdateManager {
   }
   async check() {
     if (!this.updater || this.disposed || ['checking', 'downloading', 'downloaded', 'installing'].includes(this.state.stage)) return this.snapshot();
+    this.lastCheckAt = this.now();
     this.set({ stage: 'checking', message: '' });
     try {
       const result = await this.updater.checkForUpdates();
@@ -80,10 +82,14 @@ class UpdateManager {
     this.dismissedVersion = this.state.version;
     this.set({ attention: false }); return this.snapshot();
   }
-  start({ delay = 30000, interval = 12 * 60 * 60 * 1000 } = {}) {
+  checkWhenDue(cooldown = 5 * 60 * 1000) {
+    if (!this.state.supported || this.disposed || this.now() - this.lastCheckAt < cooldown) return Promise.resolve(this.snapshot());
+    return this.check();
+  }
+  start({ delay = 5000, interval = 15 * 60 * 1000 } = {}) {
     if (!this.state.supported || this.disposed || this.initialTimer) return;
-    this.initialTimer = setTimeout(() => this.check(), delay);
-    this.repeatTimer = setInterval(() => this.check(), interval);
+    this.initialTimer = setTimeout(() => this.checkWhenDue(), delay);
+    this.repeatTimer = setInterval(() => this.checkWhenDue(), interval);
   }
   dispose() {
     this.disposed = true;
@@ -97,13 +103,14 @@ const RELEASE_API = 'https://api.github.com/repos/Pritika04/deskling/releases/la
 
 // macOS only checks release metadata. Downloads and installation stay in the user's hands.
 class ManualUpdateManager extends UpdateManager {
-  constructor({ version, arch = process.arch, fetchRelease = globalThis.fetch, openDownloadPage, onChange }) {
-    super({ version, onChange });
+  constructor({ version, arch = process.arch, fetchRelease = globalThis.fetch, openDownloadPage, onChange, now }) {
+    super({ version, onChange, now });
     this.arch = arch; this.fetchRelease = fetchRelease; this.openDownloadPage = openDownloadPage;
     this.state = { ...this.state, supported: true, manual: true, stage: 'idle' };
   }
   async check() {
     if (this.disposed || this.state.stage === 'checking') return this.snapshot();
+    this.lastCheckAt = this.now();
     this.set({ stage: 'checking', message: '' });
     try {
       const response = await this.fetchRelease(RELEASE_API, {

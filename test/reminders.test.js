@@ -3,11 +3,25 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { dueReminders } = require('../src/reminders');
 const { processReminders } = require('../src/reminders');
+const { ReminderMessages } = require('../src/reminders');
+const templates = require('../content/reminders.json');
 const { Store } = require('../src/store');
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
 function state(reminder) {
   return { settings: { remindersPaused: false, dayStartHour: 0 }, days: {}, reminderDeliveries: {}, habits: [{ id: 'a', name: 'Water', type: 'count', goal: 8, archived: false, reminder }] };
 }
+
+test('reminder wording has 50+ unique choices and uses the full pool before repeating', () => {
+  assert.ok(templates.length >= 50);
+  assert.equal(new Set(templates).size, templates.length);
+  assert.ok(templates.every(text => text.includes('{habit}')));
+  const picker = new ReminderMessages(() => 0.42);
+  const cycle = Array.from({ length: templates.length }, () => picker.next('Drink water'));
+  assert.equal(new Set(cycle).size, templates.length);
+  assert.ok(cycle.every(text => text.includes('Drink water') && !text.includes('{habit}')));
+  assert.notEqual(picker.next('Drink water'), cycle.at(-1));
+  assert.ok(picker.next('Read 10 pages').includes('Read 10 pages'));
+});
 test('daily reminders fire at the chosen clock time and do not repeat after restart', () => {
   const data = state({ mode: 'daily', time: '09:15' });
   assert.equal(dueReminders(data, new Date(2026, 10, 6, 9, 14)).length, 0);
