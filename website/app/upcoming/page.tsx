@@ -6,7 +6,7 @@ import { AnalyticsPreferences } from "../google-analytics";
 
 export const metadata: Metadata = {
   title: "What’s next for Deskling — Upcoming features",
-  description: "A little peek at Deskling’s plans: more accessories, and ideas for games, playful power-ups, new buddies and voice commands. Share what you’d love next.",
+  description: "A little peek at Deskling’s plans: more accessories, and ideas for games, playful power-ups, daily surprise buddies and voice commands. Share what you’d love next.",
   alternates: { canonical: "/upcoming" },
   openGraph: { title: "A little peek at what’s next for Deskling", description: "Plans, possibilities, and little ideas for your desktop buddy.", url: "/upcoming", type: "website", images: ["/social.png"] },
   twitter: { card: "summary_large_image", title: "What’s next for Deskling", description: "Plans, possibilities, and little ideas for your desktop buddy.", images: ["/social.png"] },
@@ -18,7 +18,7 @@ const planned = [
 const exploring = [
   { title: "Little games, together", description: "A small play break with your buddy. Something quick, sweet, and easy to step away from when it’s time to focus again.", Icon: Gamepad2 },
   { title: "A sprinkle of magic", description: "Playful power-ups you could unlock with coins: a little extra sparkle, a new animation, or a fun way to play together.", Icon: WandSparkles },
-  { title: "New little faces", description: "More buddies to meet and unlock. We’re also exploring an optional daily surprise buddy, with your favorite always there to switch back to.", Icon: Sparkles },
+  { title: "A daily little surprise", description: "An optional surprise buddy to greet you each day, with your favorite always there to switch back to. Just an idea we’re exploring.", Icon: Sparkles },
   { title: "A little chat with your buddy", description: "Voice-activated commands for little things like “Log a glass of water,” “Show my habits,” or “Pause reminders.” A way to check in with your buddy, hands-free.", Icon: Mic },
 ];
 
@@ -33,6 +33,7 @@ export default function Upcoming() {
     <main id="main" className="upcoming-page wrap">
       <Link className="upcoming-back" href="/"><ArrowLeft size={15} aria-hidden="true" /> Back to our little corner</Link>
       <div className="upcoming-intro"><span className="eyebrow">A LITTLE SOMETHING TO LOOK FORWARD TO</span><h1>Small ideas.<br /><em>Lovely possibilities.</em></h1><p>Deskling is still growing. Here’s a peek at what we’d love to bring to your buddy’s little world.</p><span className="upcoming-note">A direction, not a deadline. Plans may change as we learn what feels right.</span></div>
+      <section className="upcoming-group" aria-labelledby="available-heading"><div className="upcoming-group-heading"><span className="upcoming-status">Available now</span><h2 id="available-heading">Three new little faces.</h2><p>Mushroom, cloud, and strawberry are here! Unlock them with coins in Shop → Buddies, then switch between your buddies whenever you like.</p></div><Link className="button" href="/#downloads">Meet your next buddy <ArrowRight size={16} aria-hidden="true" /></Link></section>
       <section className="upcoming-group" aria-labelledby="planned-heading"><div className="upcoming-group-heading"><span className="upcoming-status">Planned</span><h2 id="planned-heading">The next little steps.</h2><p>Things we want to focus on next.</p></div><div className="upcoming-grid">{planned.map(({ title, description, Icon }) => <article className="upcoming-card" key={title}><Icon size={25} strokeWidth={1.3} aria-hidden="true" /><h3>{title}</h3><p>{description}</p></article>)}</div></section>
       <section className="upcoming-group" aria-labelledby="exploring-heading"><div className="upcoming-group-heading"><span className="upcoming-status exploring">Exploring</span><h2 id="exploring-heading">What if we…?</h2><p>Ideas we’re playing with. Tell us which ones make you smile.</p></div><div className="upcoming-grid exploring-grid">{exploring.map(({ title, description, Icon }) => <article className="upcoming-card" key={title}><Icon size={25} strokeWidth={1.3} aria-hidden="true" /><h3>{title}</h3><p>{description}</p></article>)}</div></section>
       <section className="upcoming-invitation" aria-labelledby="idea-heading"><Heart size={25} strokeWidth={1.3} aria-hidden="true" /><h2 id="idea-heading">Got a tiny wish?</h2><p>Something you’d love to see? A small thing that would make your day?<br />Your notes help shape what Deskling becomes.</p><Link className="button" href="/#feedback">Share an idea <ArrowRight size={16} aria-hidden="true" /></Link><span>No account. Email optional.</span></section>
