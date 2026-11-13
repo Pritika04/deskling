@@ -1,10 +1,9 @@
-## Deskling 0.1.10
+## Deskling 0.1.11
 
-- A new progress view shows the story of each habit without crowding your daily cards. Open the chart icon beside Settings to explore it.
-- Week shows daily progress and a simple best-day highlight. Month shows a calendar with completed days marked and exact logs when you select a date.
-- Three months compares progress toward each full calendar month and shows your longest run of completed days. Three completed days in November is 10% of its 30 days.
-- Every period shows how many days you met your goal. Total minutes appear for time-based habits; count habits avoid unnecessary totals.
-- Progress stays on your device. Browsing charts does not change your saved logs, and historical goals are respected.
+- Meet three new buddies in **Shop → Buddies**: Little mushroom (15 coins), Little cloud (18 coins), and Strawberry (20 coins).
+- Unlock each buddy permanently, then switch freely in Settings or the shop. Your buddy's name, habits, progress, and outfit stay with you.
+- New buddies share the existing blinking, sleeping, affection, treats, cursor-following eyes, and accessories, in the same soft color palettes.
+- On Mac, the buddy's movement boundaries now include the screen area reserved for a bottom or side Dock. Menus still use the desktop work area, and the top menu-bar boundary is preserved.
 
 Windows users can download and install this update from Settings. Mac users should download the matching DMG, quit Deskling, drag the new app into Applications, and choose **Replace**. Saved buddy data, habits, coins, and accessories are stored separately and stay with you. Linux updates remain manual.
 

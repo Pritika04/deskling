@@ -5,7 +5,7 @@ const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { localDay, todayEntries, daySummary, mysteryStatus, summary, milestoneDays } = require('./renderer/domain');
 const { chooseSurprise } = require('./mystery');
-const { catalog } = require('./renderer/wardrobe');
+const { catalog, availableBuddies } = require('./renderer/wardrobe');
 const { initialCollection, validateCollection, validateOutfit, accrueCoins, migrateEconomy } = require('./collection');
 
 const TYPES = ['count', 'checkbox', 'minutes', 'percent'];
@@ -52,7 +52,7 @@ function validateState(state) {
       (avatarPosition !== null && (!avatarPosition || !Number.isFinite(avatarPosition.x) || !Number.isFinite(avatarPosition.y)))) {
     throw new Error('Invalid settings.');
   }
-  if (!['plant', 'pineapple', 'star'].includes(state.settings.avatar) || !['sage', 'lavender', 'peach', 'ocean'].includes(state.settings.palette) ||
+  if (!availableBuddies(state.collection).some(item => item.avatar === state.settings.avatar) || !['sage', 'lavender', 'peach', 'ocean'].includes(state.settings.palette) ||
       (state.settings.accent !== null && !/^#[0-9a-f]{6}$/i.test(state.settings.accent))) throw new Error('Invalid appearance settings.');
   state.habits.forEach(validateHabit);
   validateCollection(state.collection);
@@ -170,7 +170,8 @@ class Store {
     if (next.collection.coins < item.price) throw new Error('A few more little wins will get you there.');
     next.collection.coins -= item.price;
     next.collection.owned.push(id);
-    next.collection.equipped[item.slot] = id;
+    if (item.avatar) next.settings.avatar = item.avatar;
+    else next.collection.equipped[item.slot] = id;
     return this.commit(next);
   }
 

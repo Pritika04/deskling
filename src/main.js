@@ -6,6 +6,7 @@ const { Store } = require('./store');
 const { configureAppIdentity, APP_ID, DATA_FILE } = require('./app-identity');
 const { UpdateManager, ManualUpdateManager } = require('./updates');
 const { configureWorkspaces } = require('./workspaces');
+const { avatarMovementArea, clampToArea } = require('./avatar-position');
 const { summary, mysteryStatus, graceNotice } = require('./renderer/domain');
 const makeTrayIcon = require('./tray-icon');
 const { startReminders, ReminderMessages } = require('./reminders');
@@ -85,7 +86,7 @@ function updateNearbyGaze() {
 
 function startWelcomeDance() {
   if (reducedMotion || rolling || drag || resize) return false;
-  const bounds = avatar.getBounds(), area = screen.getDisplayMatching(bounds).workArea;
+  const bounds = avatar.getBounds(), area = avatarMovementArea(screen.getDisplayMatching(bounds));
   const left = bounds.x - area.x, right = area.x + area.width - bounds.width - bounds.x;
   const direction = right >= left ? 1 : -1, distance = Math.min(180, Math.max(left, right));
   if (distance < bounds.width / 2) return false;
@@ -175,12 +176,9 @@ function openBuddy() {
   } catch (error) { console.error('Could not open buddy welcome:', error.message); showPopup(); }
 }
 
-function clampPosition(position, width, height) {
-  const area = screen.getDisplayNearestPoint(position).workArea;
-  return {
-    x: Math.round(Math.max(area.x, Math.min(position.x, area.x + Math.max(0, area.width - width)))),
-    y: Math.round(Math.max(area.y, Math.min(position.y, area.y + Math.max(0, area.height - height)))),
-  };
+function clampPosition(position, width, height, forAvatar = false) {
+  const display = screen.getDisplayNearestPoint(position);
+  return clampToArea(position, width, height, forAvatar ? avatarMovementArea(display) : display.workArea);
 }
 
 function positionPopup() {
@@ -217,7 +215,7 @@ function syncAvatarSize() {
 }
 
 function placeAvatar(position, size = displayAvatarSize()) {
-  const next = clampPosition(position, size, size);
+  const next = clampPosition(position, size, size, true);
   // Supply the intended dimensions on every move. On Windows, repeated
   // setPosition calls can accumulate DPI rounding and grow the window.
   avatar.setBounds({ ...next, width: size, height: size });
@@ -286,7 +284,7 @@ function startRoll(celebration = false, followUp = null) {
   if (reducedMotion || rolling || drag || resize || (!celebration && popup.isVisible())) return false;
   const bounds = avatar.getBounds();
   const size = store.snapshot().settings.avatarSize;
-  const area = screen.getDisplayMatching(bounds).workArea;
+  const area = avatarMovementArea(screen.getDisplayMatching(bounds));
   const left = bounds.x - area.x;
   const right = area.x + area.width - size - bounds.x;
   const direction = right >= left ? 1 : -1;
@@ -730,7 +728,7 @@ if (!app.requestSingleInstanceLock()) {
     const area = screen.getPrimaryDisplay().workArea;
     const saved = store.snapshot().settings.avatarPosition;
     const size = store.snapshot().settings.avatarSize;
-    const position = clampPosition(saved || { x: area.x + 20, y: area.y + area.height - size - 16 }, size, size);
+    const position = clampPosition(saved || { x: area.x + 20, y: area.y + area.height - size - 16 }, size, size, true);
     avatar = createWindow({ ...position, width: size, height: size, transparent: true, thickFrame: false, hasShadow: false, title: 'Deskling' }, 'avatar.html');
     popup = createWindow({ width: POPUP_WIDTH, height: popupHeight, transparent: true, thickFrame: false, hasShadow: false, backgroundColor: '#00000000', title: 'Your day · Deskling' }, 'popup.html');
     effects = createWindow({ width: 320, height: 220, transparent: true, thickFrame: false, hasShadow: false, focusable: false, title: 'A little celebration' }, 'effects.html');

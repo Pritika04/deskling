@@ -8,6 +8,7 @@ svg { width: 100%; height: 100%; pointer-events: none; }
 #buddy > svg { overflow: visible; }
 .body-shape { display: none; fill: var(--soft); }
 body[data-avatar="plant"] .plant, body[data-avatar="pineapple"] .pineapple, body[data-avatar="star"] .star { display: inline; }
+body[data-avatar="mushroom"] .mushroom, body[data-avatar="cloud"] .cloud, body[data-avatar="strawberry"] .strawberry { display: inline; }
 .plant > path:first-child { fill: var(--soft); }
 .plant > path:last-child { fill: var(--accent); }
 #character { transform-origin: 50px 52px; }

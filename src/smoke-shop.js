@@ -75,6 +75,33 @@ async function runShopSmoke({ avatar, popup, store, closeReward, hideEffects, br
   const fixture = store.snapshot(); fixture.collection.coins = 200; store.commit(fixture); broadcast();
   showPopup();
   await popup.webContents.executeJavaScript(`(() => {
+    document.querySelector('#shop-toggle').click(); document.querySelector('[data-category="buddies"]').click();
+    if (document.querySelectorAll('#accessory-grid [data-item]').length !== 3) throw new Error('Buddies category needs three characters');
+    document.querySelector('[data-item="buddy-mushroom"]').click();
+    if (!document.querySelector('#collection-preview .mushroom')) throw new Error('Buddy preview missing');
+  })()`);
+  if (store.snapshot().settings.avatar === 'mushroom') throw new Error('Preview must not change the real buddy');
+  const beforeBuddies = store.snapshot();
+  for (const type of ['mushroom', 'cloud', 'strawberry']) {
+    await popup.webContents.executeJavaScript(`(async () => {
+      document.querySelector('[data-item="buddy-${type}"]').click(); document.querySelector('#collection-action').click();
+      const deadline = Date.now() + 5000;
+      while (busy || (await window.buddy.getState()).settings.avatar !== '${type}') {
+        if (Date.now() > deadline) throw new Error('Buddy unlock timed out');
+        await new Promise(resolve => setTimeout(resolve, 25));
+      }
+      if (document.querySelector('#collection-action').textContent !== 'Your current buddy') throw new Error('Owned buddy action incorrect');
+    })()`);
+    await new Promise(resolve => setTimeout(resolve, 120));
+    if (!await avatar.webContents.executeJavaScript(`getComputedStyle(document.querySelector('#character .${type}')).display !== 'none' && document.querySelectorAll('#character [data-accessory]').length === 4`)) throw new Error('New buddy and outfit must render together');
+    fs.writeFileSync(path.join(captureDir, `${type}-buddy-preview.png`), (await popup.webContents.capturePage()).toPNG());
+  }
+  if (store.snapshot().collection.coins !== beforeBuddies.collection.coins - 53) throw new Error('Buddy unlock prices incorrect');
+  if (JSON.stringify(store.snapshot().days) !== JSON.stringify(beforeBuddies.days)) throw new Error('Changing buddies must preserve progress');
+  await popup.webContents.executeJavaScript("document.querySelector('#back-home').click();document.querySelector('#settings-toggle').click()");
+  if (!await popup.webContents.executeJavaScript("document.querySelector('#avatar-choice').options.length === 6")) throw new Error('Unlocked buddies must appear in Settings');
+  await popup.webContents.executeJavaScript("document.querySelector('#back-home').click()");
+  await popup.webContents.executeJavaScript(`(() => {
     const q = selector => document.querySelector(selector);
     q('#shop-toggle').click(); q('[data-category="accessories"]').click();
     if (!q('[data-item="round-glasses"]') || !q('[data-item="round-glasses"]').textContent.includes('Yours')) throw new Error('Owned glasses must remain visible in the shop');
@@ -113,6 +140,6 @@ async function runShopSmoke({ avatar, popup, store, closeReward, hideEffects, br
   if (store.snapshot().collection.coins !== 4 || summary(store.snapshot()).current !== 3 || store.snapshot().days[shiftDay(today, -1)]) throw new Error('Repair must restore the streak without rewards or fabricated progress');
   store.commit(original); broadcast(); popup.hide();
   console.log('TIER SHOP CHECK PASSED: price sorting, filters, owned glasses, redesigned accessories, and monthly six-coin streak repair.');
-  console.log('SHOP UI CHECK PASSED: previews, purchases, wardrobe combinations on all three buddies, and persistence.');
+  console.log('SHOP UI CHECK PASSED: accessory previews, permanent buddy unlocks, six-buddy picker, outfit compatibility, prices and persistence.');
 }
 module.exports = { runShopSmoke };

@@ -262,6 +262,7 @@ function render(next = state) {
     list.append(row);
   }
   renderCalendar(data);
+  $('#avatar-choice').replaceChildren(...BuddyWardrobe.availableBuddies(state.collection).map(item => { const option = node('option', item.name); option.value = item.avatar; return option; }));
   $('#avatar-choice').value = state.settings.avatar; $('#palette').value = state.settings.palette;
   $('#accent').value = state.settings.accent || BuddyTheme.colors[state.settings.palette];
   if (currentView === 'collection') renderCollection();
@@ -276,7 +277,7 @@ function openCollection(tab = 'shop') {
   draftOutfit = { ...state.collection.equipped };
   if (selectedAccessory) {
     const item = BuddyWardrobe.catalog.find(entry => entry.id === selectedAccessory);
-    if (item) draftOutfit[item.slot] = item.id;
+    if (item?.slot) draftOutfit[item.slot] = item.id;
   }
   showView('collection');
   $(tab === 'shop' ? '#shop-tab' : '#wardrobe-tab').focus({ preventScroll: true });
@@ -300,10 +301,10 @@ function renderCollection() {
   $('#collection-earnings').replaceChildren(node('span', `You earned ${earned} ${earned === 1 ? 'coin' : 'coins'} today.`), ...earnings.map(reward => node('span', describeEarning(reward))));
   $('#shop-tab').setAttribute('aria-pressed', String(shop)); $('#wardrobe-tab').setAttribute('aria-pressed', String(!shop));
   const repairing = shop && selectedAccessory === 'streak-repair';
-  $('#collection-preview').innerHTML = repairing ? BuddyWardrobe.icon('streak-repair') : BuddyWardrobe.preview(state.settings.avatar, draftOutfit);
+  const selected = BuddyWardrobe.catalog.find(item => item.id === selectedAccessory);
+  $('#collection-preview').innerHTML = repairing ? BuddyWardrobe.icon('streak-repair') : BuddyWardrobe.preview(shop && selected?.avatar || state.settings.avatar, draftOutfit);
   $('#wardrobe-slots').hidden = shop;
   const action = $('#collection-action');
-  const selected = BuddyWardrobe.catalog.find(item => item.id === selectedAccessory);
   if (repairing) {
     const repair = progress.repair;
     const used = progress.repairAllowance.used;
@@ -313,10 +314,10 @@ function renderCollection() {
     action.disabled = busy || !repair || collection.coins < 6;
     if (repair && collection.coins < 6) action.textContent = `Save ${6 - collection.coins} more coins`;
   } else if (shop && selected) {
-    const owned = collection.owned.includes(selected.id), wearing = collection.equipped[selected.slot] === selected.id;
+    const owned = collection.owned.includes(selected.id), wearing = selected.avatar ? state.settings.avatar === selected.avatar : collection.equipped[selected.slot] === selected.id;
     const needed = selected.price - collection.coins;
-    $('#try-on-caption').textContent = `${owned ? 'Yours' : 'Trying on'} · ${selected.name}. ${selected.description}`;
-    action.textContent = owned ? wearing ? 'Wearing it' : 'Wear this' : needed > 0 ? `Save ${needed} more ${needed === 1 ? 'coin' : 'coins'}` : `Buy for ${selected.price} coins`;
+    $('#try-on-caption').textContent = `${owned ? 'Yours' : selected.avatar ? 'Meet' : 'Trying on'} · ${selected.name}. ${selected.description}`;
+    action.textContent = owned ? wearing ? selected.avatar ? 'Your current buddy' : 'Wearing it' : selected.avatar ? 'Choose this buddy' : 'Wear this' : needed > 0 ? `Save ${needed} more ${needed === 1 ? 'coin' : 'coins'}` : `${selected.avatar ? 'Unlock' : 'Buy'} for ${selected.price} coins`;
     action.disabled = busy || (owned ? wearing : needed > 0);
   } else {
     $('#try-on-caption').textContent = 'A look that feels like you.';
@@ -374,8 +375,8 @@ $('#collection-action').addEventListener('click', async () => {
   const repairing = collectionTab === 'shop' && selectedAccessory === 'streak-repair';
   const buy = collectionTab === 'shop' && item && !state.collection.owned.includes(item.id);
   try {
-    const next = await perform(() => repairing ? window.buddy.buyAccessory('streak-repair') : buy ? window.buddy.buyAccessory(item.id) : window.buddy.equipOutfit(draftOutfit));
-    if (next) { draftOutfit = { ...next.collection.equipped }; render(next); message(repairing ? 'Your streak is restored. A fresh little start.' : buy ? `${item.name} is yours. Looking lovely!` : 'Looking lovely.'); }
+    const next = await perform(() => repairing ? window.buddy.buyAccessory('streak-repair') : buy ? window.buddy.buyAccessory(item.id) : collectionTab === 'shop' && item?.avatar ? window.buddy.updateSettings({ avatar: item.avatar }) : window.buddy.equipOutfit(draftOutfit));
+    if (next) { draftOutfit = { ...next.collection.equipped }; render(next); message(repairing ? 'Your streak is restored. A fresh little start.' : item?.avatar && collectionTab === 'shop' ? `${item.name} is here. Same name, same little journey.` : buy ? `${item.name} is yours. Looking lovely!` : 'Looking lovely.'); }
   } finally { busy = false; renderCollection(); }
 });
 async function moveHabit(id, targetId, after = false) {

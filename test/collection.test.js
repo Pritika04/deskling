@@ -169,6 +169,41 @@ test('retired companion ownership stays readable without rendering or offering i
   assert.equal(require('../src/renderer/wardrobe').accessoryMarkup('garden-sprout'), '');
   assert.ok(!shopItems(saved.collection).some(item => item.id === 'garden-sprout'));
 });
+
+test('buddy unlocks charge once, preserve the outfit and progress, and survive restart', t => {
+  const { store, reopen } = setup(t);
+  const { buddies, availableBuddies, buddyMarkup } = require('../src/renderer/wardrobe');
+  store.nameBuddy('Miso');
+  const habit = store.addHabit({ name: 'Water', type: 'count', goal: 8 }); store.logProgress(habit.id, 3);
+  const fixture = store.snapshot(); fixture.collection.coins = 100; store.commit(fixture);
+  store.buyAccessory('round-glasses');
+  const before = store.snapshot();
+  assert.equal(availableBuddies(before.collection).length, 3);
+  assert.throws(() => store.updateSettings({ avatar: 'mushroom' }));
+  for (const item of buddies) {
+    const coins = store.snapshot().collection.coins;
+    store.buyAccessory(item.id);
+    const saved = reopen().snapshot();
+    assert.equal(saved.collection.coins, coins - item.price);
+    assert.equal(saved.settings.avatar, item.avatar);
+    assert.equal(saved.settings.buddyName, 'Miso');
+    assert.deepEqual(saved.days, before.days); assert.deepEqual(saved.habits, before.habits);
+    assert.deepEqual(saved.collection.equipped, before.collection.equipped);
+    store.buyAccessory(item.id); assert.equal(store.snapshot().collection.coins, saved.collection.coins);
+    assert.match(buddyMarkup(item.avatar, saved.collection.equipped, true), new RegExp(`body-shape ${item.avatar}`));
+    assert.match(buddyMarkup(item.avatar, saved.collection.equipped, true), /gaze-eyes.*sleepy-mouth/);
+    store.updateSettings({ avatar: 'plant' }); store.updateSettings({ avatar: item.avatar });
+  }
+  assert.equal(availableBuddies(store.snapshot().collection).length, 6);
+  assert.equal(shopItems(store.snapshot().collection, 'buddies').length, 3);
+});
+
+test('an unaffordable buddy never changes coins, ownership, or the selected character', t => {
+  const { store } = setup(t); store.nameBuddy('Miso');
+  const before = store.snapshot();
+  assert.throws(() => store.buyAccessory('buddy-cloud'));
+  assert.deepEqual(store.snapshot(), before);
+});
 test('migration preserves balances and purchases while every receipt follows the current tier table', t => {
   const { store, file, day, reopen, now } = setup(t);
   store.nameBuddy('Stella'); const habit = store.addHabit({ name: 'Read', type: 'checkbox' });
