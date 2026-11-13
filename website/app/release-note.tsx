@@ -12,7 +12,7 @@ export default function ReleaseNote() {
     return () => document.removeEventListener("pointerdown", dismiss);
   }, []);
   return <div ref={root} className="release-note" onPointerEnter={event => { if (event.pointerType === "mouse") setOpen(true); }} onPointerLeave={event => { if (event.pointerType === "mouse" && !event.currentTarget.contains(document.activeElement)) setOpen(false); }} onFocus={() => setOpen(true)} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }} onKeyDown={event => { if (event.key === "Escape") { setOpen(false); event.stopPropagation(); } }}>
-    <button type="button" className="release-note-pill" aria-expanded={open} aria-controls="release-note-content" onClick={() => setOpen(true)}>{announcement.label}</button>
+    <button type="button" className="release-note-pill" aria-expanded={open} aria-controls="release-note-content" onClick={() => setOpen(true)}><span className="release-dot" aria-hidden="true" />{announcement.label}</button>
     <div id="release-note-content" className="release-note-card" hidden={!open}>
       <strong>{announcement.title}</strong>
       <p>{announcement.description}</p>
