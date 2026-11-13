@@ -39,6 +39,7 @@ function validateHabit(habit) {
       (habit.type === 'checkbox' && habit.goal !== 1) || (habit.type === 'percent' && habit.goal > 100) ||
       typeof habit.archived !== 'boolean' || (habit.reminderTimes !== undefined && (!Array.isArray(habit.reminderTimes) || habit.reminderTimes.length > 12 || habit.reminderTimes.some(time => typeof time !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time))))) throw new Error('Please check the habit name, type, goal, and reminder times.');
   if (habit.unit !== undefined && (typeof habit.unit !== 'string' || habit.unit.length > 24)) throw new Error('Keep the unit to 24 characters or fewer.');
+  if (habit.createdDay !== undefined && (typeof habit.createdDay !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(habit.createdDay) || localDay(new Date(`${habit.createdDay}T12:00:00`)) !== habit.createdDay)) throw new Error('Invalid habit creation date.');
   validateReminder(habit.reminder);
 }
 
@@ -209,7 +210,7 @@ class Store {
 
   addHabit({ name, type, goal, reminderTimes = [], reminder = null, unit = '' }) {
     if (!['count', 'checkbox', 'minutes'].includes(type)) throw new Error('Choose count, check off, or minutes.');
-    const habit = { id: randomUUID(), name: typeof name === 'string' ? name.trim() : name, type, goal: type === 'checkbox' ? 1 : type === 'percent' ? 100 : goal, reminderTimes, reminder, unit: typeof unit === 'string' ? unit.trim() : unit, archived: false };
+    const habit = { id: randomUUID(), name: typeof name === 'string' ? name.trim() : name, type, goal: type === 'checkbox' ? 1 : type === 'percent' ? 100 : goal, reminderTimes, reminder, unit: typeof unit === 'string' ? unit.trim() : unit, archived: false, createdDay: localDay(this.now(), this.state.settings.dayStartHour) };
     validateHabit(habit);
     const next = this.snapshot();
     next.habits.push(habit);

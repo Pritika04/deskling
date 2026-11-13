@@ -17,6 +17,7 @@ let draftOutfit = null;
 let shopCategory = 'all';
 const clockSync = [];
 let updateInfo = null;
+const progressView = createProgressView({ getState: () => state, onAdd: () => openEditor() });
 function describeEarning(reward) {
   const coins = `${reward.coins} ${reward.coins === 1 ? 'coin' : 'coins'}`;
   return reward.kind === 'streak' ? `${coins} as a bonus for your ${reward.streak}-day streak.` : `${coins} for completing all your habits.`;
@@ -76,13 +77,17 @@ function showView(view) {
   $('#reward').hidden = view !== 'reward';
   $('#welcome').hidden = view !== 'welcome';
   $('#collection').hidden = view !== 'collection';
+  $('#progress').hidden = view !== 'progress';
   document.querySelector('footer').hidden = ['reward', 'welcome'].includes(view);
   $('#settings-toggle').hidden = view !== 'home'; $('#back-home').hidden = view === 'home';
   $('#shop-toggle').hidden = view !== 'home';
+  $('#progress-toggle').hidden = view !== 'home';
+  $('#progress-toggle').setAttribute('aria-expanded', String(view === 'progress'));
   if (['reward', 'welcome'].includes(view)) $('#back-home').hidden = true;
   $('#settings-toggle').setAttribute('aria-expanded', String(view === 'settings'));
   scroller.scrollTo(0, view === 'home' ? homeScroll : 0);
   if (view === 'collection') renderCollection();
+  if (view === 'progress') progressView.render(state);
   message('');
 }
 function refreshBanner() {
@@ -161,6 +166,7 @@ function render(next = state) {
   if (!next) return;
   state = next;
   BuddyTheme.apply(state.settings);
+  if (currentView === 'progress') progressView.render(state);
   $('#home-title').textContent = state.settings.buddyName ? `${state.settings.buddyName}’s little space.` : 'A little space for you.';
   if (!state.settings.hatched) showView('welcome');
   else if (currentView === 'welcome') showView('home');
@@ -479,6 +485,7 @@ $('#remove-habit').addEventListener('click', async () => {
   } finally { busy = false; }
 });
 $('#settings-toggle').addEventListener('click', () => { showView('settings'); $('#avatar-choice').focus({ preventScroll: true }); });
+$('#progress-toggle').addEventListener('click', () => { showView('progress'); ($('#progress-content').hidden ? $('#progress-add') : $('#progress-habit')).focus({ preventScroll: true }); });
 $('#name-form').addEventListener('submit', async event => {
   event.preventDefault();
   if (busy) return;

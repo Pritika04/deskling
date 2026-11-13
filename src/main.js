@@ -14,6 +14,7 @@ const { formatSurprise } = require('./mystery');
 const { startThoughts, thoughtDuration, jokeSequence } = require('./thoughts');
 const { runShopSmoke } = require('./smoke-shop');
 const { runUpdateSmoke } = require('./smoke-updates');
+const { runProgressSmoke } = require('./smoke-progress');
 const { RestClock, restAfterFor } = require('./rest');
 const { nearbyGaze } = require('./gaze');
 const { WelcomeManager } = require('./welcome');
@@ -821,6 +822,7 @@ if (!app.requestSingleInstanceLock()) {
         closeReward(false); store.commit(previous); broadcast();
         console.log('COIN AND POPUP CHECK PASSED: full daily/streak receipt and no activation-driven menu.');
         await runUpdateSmoke({ popup, showPopup, original: updates, replace: next => { updates = next; }, publish: broadcastUpdates, captureDir });
+        await runProgressSmoke({ store, popup, showPopup, broadcast, captureDir });
         if (!buddyMenu().items.some(item => item.label === 'Quit Deskling')) throw new Error('The buddy context menu must include Quit Deskling');
         showPopup();
         await popup.webContents.executeJavaScript("document.querySelector('#settings-toggle').click()");

@@ -1,8 +1,10 @@
-## Deskling 0.1.9
+## Deskling 0.1.10
 
-- Download progress appears once, without a redundant disabled “Downloading” button.
-- Installed and available versions now have separate labeled rows with consistent typography.
-- The website's Upcoming page replaces the Mac/Linux polish card with an exploratory voice-command idea, including logging water, showing habits, and pausing reminders.
+- A new progress view shows the story of each habit without crowding your daily cards. Open the chart icon beside Settings to explore it.
+- Week shows daily progress and a simple best-day highlight. Month shows a calendar with completed days marked and exact logs when you select a date.
+- Three months compares progress toward each full calendar month and shows your longest run of completed days. Three completed days in November is 10% of its 30 days.
+- Every period shows how many days you met your goal. Total minutes appear for time-based habits; count habits avoid unnecessary totals.
+- Progress stays on your device. Browsing charts does not change your saved logs, and historical goals are respected.
 
 Windows users can download and install this update from Settings. Mac users should download the matching DMG, quit Deskling, drag the new app into Applications, and choose **Replace**. Saved buddy data, habits, coins, and accessories are stored separately and stay with you. Linux updates remain manual.
 

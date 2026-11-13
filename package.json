@@ -1,7 +1,7 @@
 {
   "name": "deskling",
   "productName": "Deskling",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "private": true,
   "author": {
     "name": "Pritika04",
@@ -36,7 +36,7 @@
     "dist:linux": "npm run icons && electron-builder --linux --x64 --publish never && node scripts/checksums.js --arch=x64",
     "checksums": "node scripts/checksums.js --all",
     "test": "node --test",
-    "check": "node --check scripts/generate-icons.js && node --check scripts/checksums.js && node --check scripts/smoke-packaged.js && node --check scripts/check-update-download.js && node --check scripts/check-update-install.js && node --check src/workspaces.js && node --check src/updates.js && node --check src/smoke-updates.js && node --check src/app-identity.js && node --check src/main.js && node --check src/preload.js && node --check src/store.js && node --check src/collection.js && node --check src/rest.js && node --check src/gaze.js && node --check src/welcome.js && node --check src/reminders.js && node --check src/mystery.js && node --check src/thoughts.js && node --check src/greetings.js && node --check src/popup-position.js && node --check src/renderer/domain.js && node --check src/renderer/wardrobe.js && node --check src/renderer/theme.js && node --check src/renderer/avatar.js && node --check src/renderer/effects.js && node --check src/renderer/popup.js",
+    "check": "node --check scripts/generate-icons.js && node --check scripts/checksums.js && node --check scripts/smoke-packaged.js && node --check scripts/check-update-download.js && node --check scripts/check-update-install.js && node --check src/workspaces.js && node --check src/updates.js && node --check src/smoke-updates.js && node --check src/smoke-progress.js && node --check src/renderer/progress.js && node --check src/renderer/progress-view.js && node --check src/app-identity.js && node --check src/main.js && node --check src/preload.js && node --check src/store.js && node --check src/collection.js && node --check src/rest.js && node --check src/gaze.js && node --check src/welcome.js && node --check src/reminders.js && node --check src/mystery.js && node --check src/thoughts.js && node --check src/greetings.js && node --check src/popup-position.js && node --check src/renderer/domain.js && node --check src/renderer/wardrobe.js && node --check src/renderer/theme.js && node --check src/renderer/avatar.js && node --check src/renderer/effects.js && node --check src/renderer/popup.js",
     "metrics:downloads": "node scripts/download-metrics.js"
   },
   "devDependencies": {
