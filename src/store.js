@@ -27,7 +27,7 @@ function initialState() {
     reminderDeliveries: {},
     reminderQueue: [],
     mystery: { days: {}, usedIds: [], lastType: null },
-    thoughts: { usedIds: [], lastType: null, nextAt: 0, day: null },
+    thoughts: { usedIds: [], lastType: null, shownAt: {}, nextAt: 0, day: null },
     collection: initialCollection(),
     welcomes: { day: null, lastSeenAt: 0, lastGreetingAt: 0, lastMessage: '' },
   };
@@ -60,6 +60,7 @@ function validateState(state) {
   if (typeof state.settings.hatched !== 'boolean' || typeof state.settings.buddyName !== 'string' || state.settings.buddyName.length > 24 || (state.settings.hatched && !state.settings.buddyName.trim())) throw new Error('Give your buddy a name of up to 24 characters.');
   if (!state.thoughts || !Array.isArray(state.thoughts.usedIds) || state.thoughts.usedIds.some(id => typeof id !== 'string') || (state.thoughts.lastType !== null && typeof state.thoughts.lastType !== 'string') || !Number.isFinite(state.thoughts.nextAt) || state.thoughts.nextAt < 0) throw new Error('Invalid buddy thought history.');
   if (state.thoughts.day !== null && !/^\d{4}-\d{2}-\d{2}$/.test(state.thoughts.day)) throw new Error('Invalid buddy thought day.');
+  if (state.thoughts.shownAt !== undefined && (!state.thoughts.shownAt || typeof state.thoughts.shownAt !== 'object' || Array.isArray(state.thoughts.shownAt) || Object.values(state.thoughts.shownAt).some(time => !Number.isFinite(time) || time < 0))) throw new Error('Invalid joke delivery history.');
   if (!state.reminderDeliveries || typeof state.reminderDeliveries !== 'object' || Array.isArray(state.reminderDeliveries) || Object.values(state.reminderDeliveries).some(value => typeof value !== 'string')) throw new Error('Invalid reminder history.');
   if (!Array.isArray(state.reminderQueue) || state.reminderQueue.some(item => !item || typeof item.habitId !== 'string' || typeof item.slot !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(item.day))) throw new Error('Invalid reminder queue.');
   if (!state.mystery || !state.mystery.days || typeof state.mystery.days !== 'object' || Array.isArray(state.mystery.days) || !Array.isArray(state.mystery.usedIds) || state.mystery.usedIds.some(id => typeof id !== 'string') || (state.mystery.lastType !== null && typeof state.mystery.lastType !== 'string')) throw new Error('Invalid mystery box history.');

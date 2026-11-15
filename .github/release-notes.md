@@ -1,9 +1,9 @@
-## Deskling 0.1.11
+## Deskling 0.1.12
 
-- Meet three new buddies in **Shop → Buddies**: Little mushroom (15 coins), Little cloud (18 coins), and Strawberry (20 coins).
-- Unlock each buddy permanently, then switch freely in Settings or the shop. Your buddy's name, habits, progress, and outfit stay with you.
-- New buddies share the existing blinking, sleeping, affection, treats, cursor-following eyes, and accessories, in the same soft color palettes.
-- On Mac, the buddy's movement boundaries now include the screen area reserved for a bottom or side Dock. Menus still use the desktop work area, and the top menu-bar boundary is preserved.
+- Added 120 new daytime jokes, bringing the collection to 141.
+- Each joke now has a seven-day cooldown saved on your device. Restarting Deskling, crossing midnight, or finishing the joke collection cannot trigger an early repeat.
+- Previously unseen jokes are preferred. If every joke is still on cooldown, your buddy waits rather than repeating one early.
+- Existing joke timing, question-and-answer animations, and reading time stay the same.
 
 Windows users can download and install this update from Settings. Mac users should download the matching DMG, quit Deskling, drag the new app into Applications, and choose **Replace**. Saved buddy data, habits, coins, and accessories are stored separately and stay with you. Linux updates remain manual.
 

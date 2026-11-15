@@ -5,15 +5,65 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { Store } = require('../src/store');
-const { tickThoughts, pool, thoughtDuration, jokeSequence } = require('../src/thoughts');
+const { tickThoughts, pool, thoughtDuration, jokeSequence, chooseThought } = require('../src/thoughts');
 const { chooseSurprise } = require('../src/mystery');
 
 test('daytime content contains only jokes, with question and punchline preserved', () => {
   const content = require('../content/random.json');
-  assert.equal(pool.length, 21);
+  assert.ok(pool.length >= 80);
+  assert.equal(new Set(pool.map(item => item.id)).size, pool.length);
+  assert.equal(new Set(pool.map(item => item.text.toLowerCase())).size, pool.length);
   assert.ok(content.every(item => item.type === 'joke'));
   assert.ok(pool.every(item => item.type === 'joke' && item.text));
   assert.ok(pool.some(item => item.answer));
+});
+
+test('seven-day cooldown survives a bag reset and opens at exactly 168 hours', () => {
+  const now = new Date(2026, 10, 14, 12), item = pool[0];
+  const history = { usedIds: [], lastType: 'joke', shownAt: { [item.id]: now.getTime() } };
+  assert.equal(chooseThought(history, new Date(now.getTime() + 7 * 86400000 - 1), () => 0, [item]), null);
+  assert.equal(chooseThought(history, new Date(now.getTime() - 1000), () => 0, [item]), null);
+  assert.equal(chooseThought(history, new Date(now.getTime() + 7 * 86400000), () => 0, [item]).item.id, item.id);
+});
+
+test('exhausted pool waits instead of repeating, even after restart and across midnight', t => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'buddy-joke-week-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const file = path.join(directory, 'state.json');
+  let store = new Store(file);
+  const start = new Date(2026, 10, 14, 23, 59).getTime();
+  const history = { usedIds: [], lastType: 'joke', day: '2026-11-14', nextAt: start, scheduleVersion: 3, shownAt: Object.fromEntries(pool.map(item => [item.id, start])) };
+  store.saveThoughts(history);
+  const delivered = [], show = (item, check) => { if (!check) delivered.push(item.id); return true; };
+  store = new Store(file);
+  assert.equal(tickThoughts(store, show, new Date(start + 120000), () => 0), false);
+  assert.deepEqual(store.snapshot().thoughts, history);
+  assert.equal(tickThoughts(store, show, new Date(start + 7 * 86400000 - 1), () => 0), false);
+  assert.equal(tickThoughts(store, show, new Date(start + 7 * 86400000), () => 0), true);
+  assert.equal(delivered.length, 1);
+  assert.equal(new Store(file).snapshot().thoughts.shownAt[delivered[0]], start + 7 * 86400000);
+});
+
+test('legacy joke history gets one conservative cooldown without restarting it on each launch', t => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'buddy-joke-migrate-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const file = path.join(directory, 'state.json'), now = new Date(2026, 10, 14, 12);
+  const store = new Store(file);
+  store.saveThoughts({ usedIds: [pool[0].id], lastType: 'joke', day: '2026-11-13', nextAt: now.getTime(), scheduleVersion: 3 });
+  tickThoughts(store, () => false, now, () => 0);
+  assert.equal(store.snapshot().thoughts.shownAt[pool[0].id], now.getTime());
+  const reopened = new Store(file);
+  tickThoughts(reopened, () => false, new Date(now.getTime() + 86400000), () => 0);
+  assert.equal(reopened.snapshot().thoughts.shownAt[pool[0].id], now.getTime());
+  assert.equal(reopened.snapshot().thoughts.shownAt[pool[1].id], undefined);
+});
+
+test('cooldown selection keeps unseen jokes first and never changes history during preview', () => {
+  const now = new Date(2026, 10, 14, 12);
+  const history = { usedIds: [pool[0].id], lastType: 'joke', shownAt: { [pool[0].id]: now.getTime() - 8 * 86400000 } };
+  const before = structuredClone(history);
+  assert.equal(chooseThought(history, now, () => 0, pool.slice(0, 2)).item.id, pool[1].id);
+  assert.deepEqual(history, before);
 });
 
 test('thoughts wait, defer while busy or the computer is idle, respect pause, and persist their own bag', t => {
