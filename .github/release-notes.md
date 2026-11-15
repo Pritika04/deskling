@@ -1,9 +1,8 @@
-## Deskling 0.1.12
+## Deskling 0.1.13
 
-- Added 120 new daytime jokes, bringing the collection to 141.
-- Each joke now has a seven-day cooldown saved on your device. Restarting Deskling, crossing midnight, or finishing the joke collection cannot trigger an early repeat.
-- Previously unseen jokes are preferred. If every joke is still on cooldown, your buddy waits rather than repeating one early.
-- Existing joke timing, question-and-answer animations, and reading time stay the same.
+- Deskling no longer adds an icon to the Mac menu bar.
+- Click your desktop buddy to open your habits. Right-click it to open Deskling, pause reminders, or quit. The Quit action in Settings remains available.
+- Windows and Linux keep their existing tray icons.
 
 Windows users can download and install this update from Settings. Mac users should download the matching DMG, quit Deskling, drag the new app into Applications, and choose **Replace**. Saved buddy data, habits, coins, and accessories are stored separately and stay with you. Linux updates remain manual.
 
