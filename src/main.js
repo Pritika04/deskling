@@ -475,7 +475,7 @@ function buddyMenu() {
   ]);
 }
 
-function trayMenu() { tray.setContextMenu(buddyMenu()); }
+function trayMenu() { tray?.setContextMenu(buddyMenu()); }
 
 function createWindow(options, page) {
   const window = new BrowserWindow({
@@ -758,13 +758,15 @@ if (!app.requestSingleInstanceLock()) {
       const bounds = avatar.getBounds();
       if (cursor.x < bounds.x || cursor.x >= bounds.x + bounds.width || cursor.y < bounds.y || cursor.y >= bounds.y + bounds.height) { cancelHatching(); closeReward(); popup.hide(); }
     });
-    const appIcon = process.platform === 'win32' ? nativeImage.createFromPath(path.join(__dirname, '..', 'build', 'icon.png')) : null;
-    const icon = appIcon && !appIcon.isEmpty() ? appIcon.resize({ width: 32, height: 32 }) : makeTrayIcon(nativeImage);
-    if (process.platform === 'darwin') icon.setTemplateImage(true);
-    tray = new Tray(icon);
-    tray.setToolTip('Deskling · a little company for your day');
-    tray.on('click', showPopup);
-    trayMenu();
+    // macOS uses the desktop buddy as its entry point, without a menu-bar icon.
+    if (process.platform !== 'darwin') {
+      const appIcon = process.platform === 'win32' ? nativeImage.createFromPath(path.join(__dirname, '..', 'build', 'icon.png')) : null;
+      const icon = appIcon && !appIcon.isEmpty() ? appIcon.resize({ width: 32, height: 32 }) : makeTrayIcon(nativeImage);
+      tray = new Tray(icon);
+      tray.setToolTip('Deskling · a little company for your day');
+      tray.on('click', showPopup);
+      trayMenu();
+    }
     avatar.webContents.on('context-menu', event => {
       event.preventDefault();
       buddyMenu().popup({ window: avatar });
@@ -780,6 +782,7 @@ if (!app.requestSingleInstanceLock()) {
       savePosition();
     });
     if (smokeTest) {
+      if (process.platform === 'darwin' && tray) throw new Error('Mac must not create a menu-bar tray icon');
       // Exercise both sandboxed renderers and their real preload/IPC bridge.
       for (const window of [avatar, popup]) {
         if (window.webContents.isLoading()) await new Promise(resolve => window.webContents.once('did-finish-load', resolve));
